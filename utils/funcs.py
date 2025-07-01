@@ -1,9 +1,9 @@
 """Utility functions."""
 
-from numpy import sqrt, round, min, argwhere
 import random
+from numpy import sqrt, round, min, argwhere
 from shapely.affinity import affine_transform
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point
 from shapely.ops import triangulate
 
 

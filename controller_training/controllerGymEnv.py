@@ -8,12 +8,12 @@ from resources.config import env_config, vehicle_config
 from training_util_funcs import collision_distance_score, goal_distance_score, calc_reward
 import training_config
 from utils.enums import VehicleStatus
-from components.worldSimulator import WorldSimulator
+from components.simulation import Simulation
 
 class ControllerGymEnv(gym.Env):
 
     def __init__(self, verbose=0):
-        self.world_simulator = None
+        self.simulation = None
         
         self.verbose = verbose
 
@@ -38,29 +38,23 @@ class ControllerGymEnv(gym.Env):
 
 
     def step(self, action):
-
         self.step_counter += 1
         if self.verbose >= 2:
             print("Training step #"+str(self.step_counter))
 
         # execute given action
-        self.world_simulator.vehicle.execute_control_action(action, vehicle_config.control_duration)
-
+        self.simulation.vehicle.execute_control_action(action, vehicle_config.control_duration)
 
         ############## THIS PORTION IS LEFT FOR REFERENCE, REPLACE REWARD CALCULATION WITH YOUR OWN...
 
         # calc reward (based on diff between state values)
-        post_goal_distance_score = goal_distance_score(self.world_simulator)
-        post_collision_distance_score = collision_distance_score(self.world_simulator)
 
-        reward, self.prev_goal_distance_score, self.prev_collision_distance_score = \
-            calc_reward(self.world_simulator.vehicle.status,
-                        self.prev_goal_distance_score,
-                        post_goal_distance_score,
-                        self.prev_collision_distance_score,
-                        post_collision_distance_score,
-                        self.world_simulator)
-                        # world_simulator is only provided to provide access to additional information on vhicle status for some advanced reward options
+        reward, post_goal_distance_score, post_collision_distance_score = \
+                 calc_reward(self.simulation.vehicle.status,
+                             self.prev_goal_distance_score,
+                             self.prev_collision_distance_score,
+                             self.simulation)
+                             # simulation is only provided to provide access to additional information on vhicle status for some advanced reward options
         
         self.prev_goal_distance_score = post_goal_distance_score
         self.prev_collision_distance_score = post_collision_distance_score
@@ -68,8 +62,8 @@ class ControllerGymEnv(gym.Env):
         ##########################################
 
         # calc doneness
-        if self.world_simulator.vehicle.status == VehicleStatus.UNSAFE or \
-            self.world_simulator.vehicle.status == VehicleStatus.FINISH or \
+        if self.simulation.vehicle.status == VehicleStatus.UNSAFE or \
+            self.simulation.vehicle.status == VehicleStatus.FINISH or \
             self.step_counter > training_config.max_training_steps:
             done = True
         else:
@@ -85,13 +79,14 @@ class ControllerGymEnv(gym.Env):
         if self.verbose >= 1:
             print("Training reset")
 
-        if self.world_simulator is not None:
-            self.world_simulator.kill()
+        if self.simulation is not None:
+            self.simulation.kill()
 
-        self.world_simulator = WorldSimulator()
+        self.simulation = Simulation()
 
-        self.prev_goal_distance_score = goal_distance_score(self.world_simulator)
-        self.prev_collision_distance_score = collision_distance_score(self.world_simulator)
+        # for reward calculation
+        self.prev_goal_distance_score = goal_distance_score(self.simulation)
+        self.prev_collision_distance_score = collision_distance_score(self.simulation)
 
         self.step_counter = 0
         return self._get_current_observation_for_controller()
@@ -99,12 +94,12 @@ class ControllerGymEnv(gym.Env):
 
     def _get_current_observation_for_controller(self):
         # get steering from state
-        steering = self.world_simulator.vehicle.get_state()[3]
+        steering = self.simulation.vehicle.get_state()[3]
         # get a sensor image
-        if self.world_simulator.vehicle.status == VehicleStatus.SAFE:
-            observation_image = self.world_simulator.vehicle.sensor.get_observation_image()
+        if self.simulation.vehicle.status == VehicleStatus.SAFE:
+            observation_image = self.simulation.vehicle.sensor.get_observation_image()
         else:
             observation_image = Image.new('L', [self.observation_scan_shape[2], self.observation_scan_shape[1]])
         # format inputs and return
-        return self.world_simulator.vehicle.controller.arrange_controller_input(observation_image, steering)
+        return self.simulation.vehicle.controller.arrange_controller_input(observation_image, steering)
     

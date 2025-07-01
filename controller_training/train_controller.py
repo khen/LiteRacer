@@ -1,3 +1,5 @@
+"""Train vehicle controller using stable_baselines3."""
+
 ### To be able to call files from parent folder
 import os, sys
 sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
@@ -10,6 +12,7 @@ from stable_baselines3.common import logger, monitor, noise
 from stable_baselines3.common.callbacks import EvalCallback
 from controllerGymEnv import ControllerGymEnv
 from resources.config import env_config
+
 
 # create timestamp for file
 today = date.today()

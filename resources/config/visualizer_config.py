@@ -1,13 +1,13 @@
 """Visualizer parameters."""
 
-from utils.enums import DrawObservation
+from utils.enums import Visualization, DrawObservationInVisualizer
 
 
-visualization = DrawObservation.ON
-window_position_x = 0 #1300
-window_position_y = 0 #700
-draw_observation = DrawObservation.ON
+visualization = Visualization.ON_AND_NO_BLOCK_ON_TERMINATION
+window_position_x = 0 # determines where the visualizer window opens on screen
+window_position_y = 0
+draw_observation = DrawObservationInVisualizer.ON # only if visualization is ON
 open_observation_view = True
-world_visualizer_dpi = 150 # base value is 100 - increase value to increase world visulizer resolution
+visualizer_dpi = 100 # base value is 100 - increase value to increase visulizer resolution
 min_x_range = [0,1]
 min_y_range = [-2,2]

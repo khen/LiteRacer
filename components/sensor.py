@@ -1,12 +1,14 @@
 """Sensor."""
 
 from math import pi, cos, sin
+from numpy import sqrt
 import shapely.geometry as sg
 from shapely import plotting
 import matplotlib.pyplot as plt
 from PIL import Image
 from io import BytesIO
 import gc
+from utils.enums import SensingFreq
 
 
 class Sensor():
@@ -21,6 +23,7 @@ class Sensor():
         self._simulator = simulator
         self._observation = None # a list of detected shapes in sensor frame [track, finish line]
         self._observation_listeners = []
+        self._sensing_freq = vehicle_config.sensing_freq
 
         # init plotting environment for observations (required to create observation images)
         # must actively close fig window when sensor is deactivated
@@ -86,7 +89,7 @@ class Sensor():
         plt.close(self._sensor_fig)
 
     def sense(self):
-        """Return an observation (and set the appropriate variable) based on the world state from the simulator."""
+        """Return an observation (and set the appropriate variable) based on the simulation state."""
 
         # ask for observation from the simulator, given the sensor parameters
         try:
@@ -104,6 +107,10 @@ class Sensor():
     def get_observation_image(self, FROM_SCRATCH=False):
         """Return an image of the latest observation, or a given observation."""
 
+        if self._sensing_freq == SensingFreq.ON_REQUEST:
+            # sensing is not called automatically, so must call manually
+            self.sense()
+
         if self._latest_observation_image is not None:
             # return the chached image, if observation has no changed since last call 
             return self._latest_observation_image
@@ -113,10 +120,24 @@ class Sensor():
             self._plot_observation()
 
         # create image from fig
-        image_buffer = BytesIO()        
-        self._sensor_fig.savefig(image_buffer, format='png', bbox_inches='tight', pad_inches=0)
-        image_buffer.seek(0)
-        observation_image = Image.open(image_buffer)
+        # image_buffer = BytesIO()        
+        # self._sensor_fig.savefig(image_buffer, format='png', bbox_inches='tight', pad_inches=0)
+        # image_buffer.seek(0)
+        # observation_image = Image.open(image_buffer)
+
+        import numpy as np
+
+        image_flat = np.frombuffer(self._sensor_fig.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+
+        im_size = self._sensor_fig.canvas.get_width_height()
+        scale_correction = sqrt(len(image_flat)/(im_size[0]*im_size[1]*3))
+        corrected_im_size = [int(scale_correction*im_size[0]), int(scale_correction*im_size[1])]
+
+        # NOTE: reversed converts (W, H) from get_width_height to (H, W)
+        observation_image_array = image_flat.reshape(*reversed(corrected_im_size), 3)  # (H, W, 3)
+
+        from PIL import Image
+        observation_image = Image.fromarray(observation_image_array) # RGB image
 
         # save the image to file
         # import time
@@ -131,14 +152,7 @@ class Sensor():
         """Release resources."""
 
         self._observation_listeners = []
-
-        if self._sensor_fig is not None:
-            self._sensor_ax.cla()
-            self._sensor_fig.clf()
-            plt.close(self._sensor_fig)
-            del self._sensor_fig
-            del self._sensor_ax
-            gc.collect()
+        self.close_sensor_view()
 
     def _plot_observation(self):
         """Plot from scratch latest observation on the sensor axis."""

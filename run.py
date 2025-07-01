@@ -2,8 +2,9 @@
 
 import matplotlib.pyplot as plt
 from resources.config import visualizer_config
-from components.worldSimulator import WorldSimulator
-from utils.enums import DrawObservation, VehicleStatus
+from components.simulation import Simulation
+from components.vehicle import Vehicle
+from utils.enums import Visualization, VehicleStatus
 import argparse
 
 
@@ -14,30 +15,35 @@ args = parser.parse_args()
 
 # run the requested amount of times
 for run in range(args.number_of_runs):
-    # init world
-    world_simulator = WorldSimulator()
+    # init simulation
+    simulation = Simulation()
 
     # visualize run
-    if visualizer_config.visualization == DrawObservation.ON:
-        world_simulator.open_world_view(visualizer_config.window_position_x,visualizer_config.window_position_y,visualizer_config.open_observation_view)
+    if visualizer_config.visualization == Visualization.ON_AND_BLOCK_ON_TERMINATION or \
+         visualizer_config.visualization == Visualization.ON_AND_NO_BLOCK_ON_TERMINATION:
+        simulation.open_visualizer(visualizer_config.window_position_x, visualizer_config.window_position_y, visualizer_config.open_observation_view)
 
     # run
-    print("Run #"+str(run+1)+": running...")
-    states, observations, actions = world_simulator.vehicle.run()
+    print(f"Run #{run+1}: running...")
+    states, observations, actions = simulation.vehicle.run()
         
     # check and report vehicle status
-    if world_simulator.vehicle.status == VehicleStatus.FINISH:
-        print("Goal reached.")
-    elif world_simulator.vehicle.status == VehicleStatus.UNSAFE:
-        print("Vehicle unsafe.")
+    if simulation.vehicle.status == VehicleStatus.FINISH:
+        print("Goal reached.\n")
+    elif simulation.vehicle.status == VehicleStatus.UNSAFE:
+        print("Vehicle unsafe.\n")
     else:
-        print("Vehicle timed-out.")
+        print("Vehicle timed-out.\n")
 
     # visualize end of run and block
-    if visualizer_config.visualization == DrawObservation.ON:
-        plt.show(block=True)  
-    elif visualizer_config.visualization == DrawObservation.RUN_TERMINATION_ONLY:
-        world_simulator.open_world_view(visualizer_config.window_position_x,visualizer_config.window_position_y,visualizer_config.open_observation_view)
+    if visualizer_config.visualization == Visualization.ON_AND_BLOCK_ON_TERMINATION:
+        plt.show(block=True)
+    if visualizer_config.visualization == Visualization.TERMINATION_ONLY:
+        simulation.open_visualizer(visualizer_config.window_position_x, visualizer_config.window_position_y, visualizer_config.open_observation_view)
         plt.show(block=True)
 
-    world_simulator.kill() # close open figures and realease resources
+    simulation.kill() # close open figures and realease resources
+
+    print(f"Control loops: {Vehicle.control_loop_counter}.")
+    Vehicle.control_loop_counter = 0
+    

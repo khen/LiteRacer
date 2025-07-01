@@ -4,7 +4,7 @@ from cmath import inf
 from math import sin, cos, tan, pi
 from shapely import affinity
 import shapely.geometry as sg
-from utils.enums import VehicleStatus
+from utils.enums import VehicleStatus, SensingFreq
 
 
 class Vehicle():
@@ -19,16 +19,17 @@ class Vehicle():
     VF_shape = None
     """Shape of vehicle (static to avoid recalculation)."""
 
-    def __init__(self, world_simulator, vehicle_config, initial_state=None):
-        """Initiate a new Vehicle in the given WorldSimulator according to given configuration."""
+    def __init__(self, simulation, vehicle_config, initial_state=None):
+        """Initiate a new Vehicle in the given Simulation according to given configuration."""
 
         self._state = initial_state
         self._state_listeners = []
         self.status = VehicleStatus.UNKNOWN
 
         # add sensor
-        self.sensor = vehicle_config.sensorClass(world_simulator, vehicle_config)
-        self.add_listener_state(self.sensor.sense)
+        self.sensor = vehicle_config.sensorClass(simulation, vehicle_config)
+        if vehicle_config.sensing_freq == SensingFreq.CONTINUOUS:
+            self.add_listener_state(self.sensor.sense)
 
         # add controller
         self.controller = vehicle_config.controllerClass(vehicle_config)
