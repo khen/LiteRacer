@@ -3,7 +3,7 @@
 import numpy as np
 from falsification_demo.controllableSimulation import ControllableSimulation
 from falsification_enums import NODE_SELECTION
-import falsification_config
+import meta_planning_config
 
 class MetaPlanningTree:
 
@@ -18,9 +18,9 @@ class MetaPlanningTree:
 
     def __init__(self, initial_meta_state):
         self.initial_node   = self.Node(initial_meta_state)
-        self.max_steps = falsification_config.max_steps
-        self.node_selection = falsification_config.node_selection
-        self.goal_bias_rate = falsification_config.goal_bias_rate
+        self.max_steps = meta_planning_config.max_steps
+        self.node_selection = meta_planning_config.node_selection
+        self.goal_bias_rate = meta_planning_config.goal_bias_rate
 
         self.number_of_simulated_samples = 0
         self.node_list = [] # TODO: CAN REPLACE THIS WITH A QUEUE

@@ -5,14 +5,13 @@ from enum import Enum
 
 class Visualization(Enum):
     OFF = 0
-    TERMINATION_ONLY = 1
-    ON_AND_BLOCK_ON_TERMINATION = 2 # blocks program after each vehicle run, until visualizer window manually closed
-    ON_AND_NO_BLOCK_ON_TERMINATION = 3
+    ON = 1
+    TERMINATION_STATE_ONLY = 2
 
 class DrawObservationInVisualizer(Enum):
     OFF = 0
-    ON = 1
-    ON_INCL_HISTORY = 2
+    CURRENT = 1
+    CURRENT_AND_HISTORY = 2
 
 class VehicleStatus(Enum):
     UNSAFE = 0

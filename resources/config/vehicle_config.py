@@ -25,7 +25,7 @@ delta_t = 0.25 # (sec.) time discretization resolution for continuous motion sim
 run_timeout = 10000 # maximal amount of control steps per run
 
 ### sensor config
-sensing_freq = SensingFreq.CONTINUOUS #Sensing.ON_REQUEST # the frequency in which sensing is invoked
+sensing_freq = SensingFreq.CONTINUOUS #SensingFreq.ON_REQUEST # the frequency in which sensing is invoked
 sensorClass = Sensor # do not change unless overriding functionality
 sensor_angle_range = [-2*pi/5, 2*pi/5]
 sensor_max_range = 2
