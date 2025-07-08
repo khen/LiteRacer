@@ -1,6 +1,7 @@
 """Utility functions."""
 
 import random
+import matplotlib
 from numpy import sqrt, round, min, argwhere
 from shapely.affinity import affine_transform
 from shapely.geometry import Point
@@ -51,3 +52,17 @@ def min_distance_from_curve(X, Y, x, y, precision=5):
     # find the minima
     min_idxs = argwhere(distances==min(distances)).ravel()
     return min_idxs, distances
+
+
+def move_figure(fig, x, y):
+    """Move figure's upper left corner to pixel (x, y)"""
+    
+    backend = matplotlib.get_backend()
+    if backend == 'TkAgg':
+        fig.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
+    elif backend == 'WXAgg':
+        fig.canvas.manager.window.SetPosition((x, y))
+    else:
+        # This works for QT and GTK
+        # You can also use window.setGeometry
+        fig.canvas.manager.window.move(x, y)

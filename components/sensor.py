@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from io import BytesIO
 import gc
+from utils.funcs import move_figure
 from utils.enums import SensingFreq
 
 
@@ -80,7 +81,8 @@ class Sensor():
         """Open observation visualizer."""
 
         if x is not None and y is not None:
-            self._sensor_fig.canvas.manager.window.move(x,y)
+            if x!=0 or y!=0:
+                move_figure(self._sensor_fig, x, y)
         self._sensor_fig.show()
 
     def close_sensor_view(self):

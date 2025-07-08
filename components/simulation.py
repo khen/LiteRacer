@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from shapely import affinity, plotting
 import shapely.geometry as sg
 import random
-from utils.funcs import min_distance_from_curve
+from utils.funcs import min_distance_from_curve, move_figure
 from utils.enums import DrawObservationInVisualizer, VehicleStatus
 from components.vehicle import Vehicle
 
@@ -41,10 +41,10 @@ class Simulation():
             self._calc_track_shapes(self.env_config)
 
         # init track related config
-        self._env_bounding_box =   [[min([self.visualizer_config.min_x_range[0],min(Simulation._X_track_curve)-self.env_config.track_padding]),\
-                                     min([self.visualizer_config.min_y_range[0],min(Simulation._Y_track_curve)-self.env_config.track_padding])],\
-                                    [max([self.visualizer_config.min_x_range[1],max(Simulation._X_track_curve)+self.env_config.track_padding]),\
-                                     max([self.visualizer_config.min_y_range[1],max(Simulation._Y_track_curve)+self.env_config.track_padding])]]
+        self._env_bounding_box =   [[min([self.visualizer_config.env_min_x_range[0],min(Simulation._X_track_curve)-self.env_config.track_padding]),\
+                                     min([self.visualizer_config.env_min_y_range[0],min(Simulation._Y_track_curve)-self.env_config.track_padding])],\
+                                    [max([self.visualizer_config.env_min_x_range[1],max(Simulation._X_track_curve)+self.env_config.track_padding]),\
+                                     max([self.visualizer_config.env_min_y_range[1],max(Simulation._Y_track_curve)+self.env_config.track_padding])]]
                                      # bottom-left, top-right
 
         # cached dynamic shapes that are updated with vehicle movement
@@ -170,8 +170,15 @@ class Simulation():
         if self._simulation_fig is not None:
             self.close_visualizer()
    
-    def open_visualizer(self, x=None, y=None, open_observation_view=False):
+    def open_visualizer(self, x=None, y=None, open_separate_observation_view=None):
         """Open simulation visualizer."""
+
+        if x is None:
+            x = self.visualizer_config.window_position_x
+        if y is None:
+            y = self.visualizer_config.window_position_y
+        if open_separate_observation_view is None:
+            open_separate_observation_view = self.visualizer_config.open_separate_observation_view
         
         # init plotting environment
         self._simulation_fig = plt.figure(figsize=[self._fig_w,self._fig_h], dpi=self.visualizer_config.visualizer_dpi)
@@ -180,11 +187,8 @@ class Simulation():
         fig_manager = plt.get_current_fig_manager()
         fig_manager.set_window_title("LiteRacer: World View")
 
-        if x is not None and y is not None:
-            self._simulation_fig.canvas.manager.window.move(x,y)
-        else:
-            x = 0
-            y = 0
+        if x!=0 or y!=0:
+            move_figure(self._simulation_fig, x, y)
 
         self._plot_simulation()
         self._simulation_fig.show()
@@ -196,7 +200,7 @@ class Simulation():
             self._is_simulation_fig_open = False
         self._simulation_fig.canvas.mpl_connect('close_event', on_simulation_fig_close)
 
-        if open_observation_view:
+        if open_separate_observation_view == True:
             simulation_fig_size = self._simulation_fig.get_size_inches()*self._simulation_fig.dpi#/2
             self.vehicle.sensor.open_sensor_view(x+int(simulation_fig_size[0]),y)
 
@@ -542,13 +546,13 @@ class Simulation():
         # vehicle frame origin
         self._dynmic_elements_in_figure.append(self._simulation_ax.add_patch(patches.Circle((self.vehicle._state[0], self.vehicle._state[1]), radius=0.05, linewidth=0, fc='darkgreen')))
 
-        if self.visualizer_config.draw_observation == DrawObservationInVisualizer.ON_INCL_HISTORY:
+        if self.visualizer_config.draw_observation_in_visualizer == DrawObservationInVisualizer.CURRENT_AND_HISTORY:
 
             # sensing history
             if not self._observed_region_shape.is_empty:
                 self._dynmic_elements_in_figure.append(self._simulation_ax.add_patch(plotting.patch_from_polygon(self._observed_region_shape, linewidth=0, color='r', alpha=0.05)))
                 
-        if self.visualizer_config.draw_observation == DrawObservationInVisualizer.ON_INCL_HISTORY or self.visualizer_config.draw_observation == DrawObservationInVisualizer.ON:
+        if self.visualizer_config.draw_observation_in_visualizer == DrawObservationInVisualizer.CURRENT_AND_HISTORY or self.visualizer_config.draw_observation_in_visualizer == DrawObservationInVisualizer.CURRENT:
             # observed track    
             if not self._observed_track_shape.is_empty and (self._observed_track_shape.geom_type == 'Polygon' or self._observed_track_shape.geom_type == 'MultiPolygon'):
                 self._dynmic_elements_in_figure.append(self._simulation_ax.add_patch(plotting.patch_from_polygon(self._observed_track_shape, linewidth=0, fc='r', ec='k', alpha=0.2)))
