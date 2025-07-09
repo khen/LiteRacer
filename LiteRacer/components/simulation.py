@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 from shapely import affinity, plotting
 import shapely.geometry as sg
 import random
-from utils.funcs import min_distance_from_curve, move_figure
-from utils.enums import DrawObservationInVisualizer, VehicleStatus
-from components.vehicle import Vehicle
+from ..utils.funcs import min_distance_from_curve, move_figure
+from ..utils.enums import DrawObservationInVisualizer, VehicleStatus
+from .vehicle import Vehicle
 
 
 class Simulation():
@@ -25,15 +25,15 @@ class Simulation():
 
         # load config
         if env_config is None:
-            from resources.config import env_config
+            from ..resources.config import env_config
         self.env_config = env_config
 
         if vehicle_config is None:
-            from resources.config import vehicle_config
+            from ..resources.config import vehicle_config
         self.vehicle_config = vehicle_config
 
         if visualizer_config is None:
-            from resources.config import visualizer_config
+            from ..resources.config import visualizer_config
         self.visualizer_config = visualizer_config
 
         # calc static shapes on first intitalization

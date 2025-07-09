@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from io import BytesIO
 import gc
-from utils.funcs import move_figure
-from utils.enums import SensingFreq
+from ..utils.funcs import move_figure
+from ..utils.enums import SensingFreq
 
 
 class Sensor():

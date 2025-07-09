@@ -1,10 +1,10 @@
 """Vehicle intrinsic parameters."""
 
 from math import pi, atan2
-from components.controller import Controller
-from components.sensor import Sensor
-from resources.config.env_config import track_drv_func
-from utils.enums import SensingFreq
+from ...components.controller import Controller
+from ...components.sensor import Sensor
+from ...utils.enums import SensingFreq
+from .env_config import track_drv_func
 
 
 ### vehicle config

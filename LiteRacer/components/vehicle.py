@@ -4,7 +4,7 @@ from cmath import inf
 from math import sin, cos, tan, pi
 from shapely import affinity
 import shapely.geometry as sg
-from utils.enums import VehicleStatus, SensingFreq
+from ..utils.enums import VehicleStatus, SensingFreq
 
 
 class Vehicle():

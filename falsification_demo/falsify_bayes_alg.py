@@ -5,9 +5,9 @@ sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 ###
 
 from bayes_opt import BayesianOptimization, acquisition
-from resources.config import env_config
-from falsification_demo.controllableSimulation import ControllableSimulation
-from components.vehicle import Vehicle
+from meta_planning.controllableSimulation import ControllableSimulation
+from LiteRacer.resources.config import env_config
+from LiteRacer.components.vehicle import Vehicle
 
 
 def simulation_function_wrapper(obs1_x, obs1_y, obs2_x, obs2_y, obs3_x, obs3_y):

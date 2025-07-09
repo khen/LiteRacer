@@ -4,9 +4,9 @@ import os, sys
 sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 ###
 
-from components.simulation import Simulation
-from components.vehicle import Vehicle
-from utils.enums import VehicleStatus
+from LiteRacer.components.simulation import Simulation
+from LiteRacer.components.vehicle import Vehicle
+from LiteRacer.utils.enums import VehicleStatus
 
 test_counter = 0
 failure_counter = 0

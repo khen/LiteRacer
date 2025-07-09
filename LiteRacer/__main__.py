@@ -1,10 +1,9 @@
 """Run vehicle in specified environment until termination."""
 
-import string
 import matplotlib.pyplot as plt
-from components.simulation import Simulation
-from components.vehicle import Vehicle
-from utils.enums import Visualization, VehicleStatus
+from .components.simulation import Simulation
+from .components.vehicle import Vehicle
+from .utils.enums import Visualization, VehicleStatus
 import argparse
 
 

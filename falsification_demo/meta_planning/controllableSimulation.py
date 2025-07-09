@@ -6,8 +6,8 @@ import random
 import shapely.geometry as sg
 from numpy.random import normal
 from numpy import sin, cos, inf, pi
-from utils.enums import VehicleStatus
-from components.simulation import Simulation
+from LiteRacer.utils.enums import VehicleStatus
+from LiteRacer.components.simulation import Simulation
 from .enums import INCREMENTAL_SIM, ENV_MUTATION_TYPE, ENV_MUTATION_BREADTH, ENV_MUTATION_DEPTH, NODE_SELECTION
 from . import config
 

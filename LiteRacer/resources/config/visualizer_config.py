@@ -1,6 +1,6 @@
 """Visualizer parameters."""
 
-from utils.enums import DrawObservationInVisualizer
+from ...utils.enums import DrawObservationInVisualizer
 
 
 window_position_x = 0 # determines where the visualizer window opens on screen

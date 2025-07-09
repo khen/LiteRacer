@@ -11,7 +11,6 @@ from stable_baselines3 import SAC, A2C, PPO
 from stable_baselines3.common import logger, monitor, noise
 from stable_baselines3.common.callbacks import EvalCallback
 from controllerGymEnv import ControllerGymEnv
-from resources.config import env_config
 
 
 # create timestamp for file

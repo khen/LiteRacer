@@ -5,9 +5,9 @@ sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 ###
 
 import random
-from falsification_demo.controllableSimulation import ControllableSimulation
-from components.vehicle import Vehicle
-from resources.config import env_config
+from meta_planning.controllableSimulation import ControllableSimulation
+from LiteRacer.components.vehicle import Vehicle
+from LiteRacer.resources.config import env_config
 
 
 failure_counter = 0

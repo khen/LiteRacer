@@ -1,6 +1,6 @@
 """Falsification algorithm parameters."""
 
-from resources.config import env_config
+from LiteRacer.resources.config import env_config
 from .enums import INCREMENTAL_SIM, ENV_MUTATION_TYPE, ENV_MUTATION_BREADTH, ENV_MUTATION_DEPTH, NODE_SELECTION
 
 ### meta-system parameters

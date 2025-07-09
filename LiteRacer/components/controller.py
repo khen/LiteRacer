@@ -59,6 +59,9 @@ class Controller():
             import stable_baselines3 
             model_type = getattr(stable_baselines3, vehicle_config.controller_model_type)
             load_func = getattr(model_type, 'load')
-            Controller._controllerModel = load_func(vehicle_config.controller_model_path)
+            import os 
+            dir_path = "\\".join(os.path.realpath(__file__).split("\\")[0:-2])
+            Controller._controllerModel = load_func(dir_path+"\\"+vehicle_config.controller_model_path)
+            #Controller._controllerModel = load_func(vehicle_config.controller_model_path)
         else:
             raise Exception('Unable to load vehicle controller model.')
