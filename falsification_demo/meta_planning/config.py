@@ -1,11 +1,7 @@
 """Falsification algorithm parameters."""
-### To be able to call files from parent folder
-import os, sys
-sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
-###
 
 from resources.config import env_config
-from falsification_enums import INCREMENTAL_SIM, ENV_MUTATION_TYPE, ENV_MUTATION_BREADTH, ENV_MUTATION_DEPTH, NODE_SELECTION
+from .enums import INCREMENTAL_SIM, ENV_MUTATION_TYPE, ENV_MUTATION_BREADTH, ENV_MUTATION_DEPTH, NODE_SELECTION
 
 ### meta-system parameters
 incremental_simulation = INCREMENTAL_SIM.YES

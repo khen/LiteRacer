@@ -4,7 +4,7 @@ Used for training (using stable_baselines3) and later for inference with the NN.
 import gym
 import numpy as np
 from PIL import Image
-from resources.config import env_config, vehicle_config
+from resources.config import vehicle_config
 from training_util_funcs import collision_distance_score, goal_distance_score, calc_reward
 import training_config
 from utils.enums import VehicleStatus

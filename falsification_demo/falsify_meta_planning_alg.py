@@ -4,8 +4,8 @@ import os, sys
 sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 ###
 
-from falsification_demo.controllableSimulation import ControllableSimulation
-from falsification_demo.metaPlanningTree import MetaPlanningTree
+from meta_planning.controllableSimulation import ControllableSimulation
+from meta_planning.metaPlanningTree import MetaPlanningTree
 from utils.enums import VehicleStatus
 from components.vehicle import Vehicle
 

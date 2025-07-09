@@ -1,5 +1,6 @@
 """Run vehicle in specified environment until termination."""
 
+import string
 import matplotlib.pyplot as plt
 from components.simulation import Simulation
 from components.vehicle import Vehicle
@@ -9,13 +10,22 @@ import argparse
 
 # read inline arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('number_of_runs', nargs='?', type=int, default=1)
+parser.add_argument('--runs', nargs='?', type=int, default=1)
+parser.add_argument('--vis', nargs='?', default='on')
 args = parser.parse_args()
 
-visualization = Visualization.ON
+if args.vis == 'off':
+    visualization = Visualization.OFF
+elif args.vis == 'end':
+    visualization = Visualization.END_STATE_ONLY
+else:
+    visualization = Visualization.ON
+
+number_of_runs = args.runs
+
 
 # run the requested amount of times
-for run in range(args.number_of_runs):
+for run in range(number_of_runs):
     # init simulation
     simulation = Simulation()
 
@@ -37,7 +47,7 @@ for run in range(args.number_of_runs):
     print(f"Control loops: {Vehicle.control_loop_counter}.\n")
 
     # visualize end of run
-    if visualization == Visualization.TERMINATION_STATE_ONLY:
+    if visualization == Visualization.END_STATE_ONLY:
         simulation.open_visualizer()
         
     # block program after each vehicle run, until visualizer window manually closed

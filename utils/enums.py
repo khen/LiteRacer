@@ -6,7 +6,7 @@ from enum import Enum
 class Visualization(Enum):
     OFF = 0
     ON = 1
-    TERMINATION_STATE_ONLY = 2
+    END_STATE_ONLY = 2
 
 class DrawObservationInVisualizer(Enum):
     OFF = 0

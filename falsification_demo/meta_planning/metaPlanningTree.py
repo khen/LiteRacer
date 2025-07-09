@@ -1,9 +1,9 @@
 """Meta-planning tree."""
 
 import numpy as np
-from falsification_demo.controllableSimulation import ControllableSimulation
-from falsification_enums import NODE_SELECTION
-import meta_planning_config
+from .controllableSimulation import ControllableSimulation
+from .enums import NODE_SELECTION
+from . import config
 
 class MetaPlanningTree:
 
@@ -18,9 +18,9 @@ class MetaPlanningTree:
 
     def __init__(self, initial_meta_state):
         self.initial_node   = self.Node(initial_meta_state)
-        self.max_steps = meta_planning_config.max_steps
-        self.node_selection = meta_planning_config.node_selection
-        self.goal_bias_rate = meta_planning_config.goal_bias_rate
+        self.max_steps = config.max_steps
+        self.node_selection = config.node_selection
+        self.goal_bias_rate = config.goal_bias_rate
 
         self.number_of_simulated_samples = 0
         self.node_list = [] # TODO: CAN REPLACE THIS WITH A QUEUE
