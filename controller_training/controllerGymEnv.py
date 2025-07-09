@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 import training_config
 from training_util_funcs import collision_distance_score, goal_distance_score, calc_reward
-from LiteRacer.resources.config import vehicle_config
+from simulation_config import vehicle_config
 from LiteRacer.utils.enums import VehicleStatus
 from LiteRacer.components.simulation import Simulation
 

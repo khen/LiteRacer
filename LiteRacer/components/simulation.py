@@ -5,6 +5,7 @@ from math import sqrt, acos, atan2, sin, cos, pi, inf
 from numpy import arange, infty, vectorize
 from matplotlib import patches
 import matplotlib.pyplot as plt
+from types import SimpleNamespace
 from shapely import affinity, plotting
 import shapely.geometry as sg
 import random
@@ -20,21 +21,13 @@ class Simulation():
     _track_shape = None
     """Shape of track."""
 
-    def __init__(self, override_initial_state=None, env_config=None, vehicle_config=None, visualizer_config=None, init_obstacles=True):
+    def __init__(self, config, override_initial_state=None, init_obstacles=True):
         """Initiate a Simulation instance with a single car in a specified environment, according to given configuration."""
 
         # load config
-        if env_config is None:
-            from ..resources.config import env_config
-        self.env_config = env_config
-
-        if vehicle_config is None:
-            from ..resources.config import vehicle_config
-        self.vehicle_config = vehicle_config
-
-        if visualizer_config is None:
-            from ..resources.config import visualizer_config
-        self.visualizer_config = visualizer_config
+        self.env_config = config.env_config
+        self.vehicle_config = config.vehicle_config
+        self.visualizer_config = config.visualizer_config
 
         # calc static shapes on first intitalization
         if Simulation._track_shape is None:
@@ -146,8 +139,13 @@ class Simulation():
 
     def copy(self):
         """Create a copy of current Simulation."""
+
+        config_copy = SimpleNamespace()
+        config_copy.env_config = self.env_config
+        config_copy.vehicle_config = self.vehicle_config
+        config_copy.visualizer_config = self.visualizer_config
         # create basic copy without obstacles
-        sim_copy = type(self)(self.vehicle.get_state(), self.env_config, self.vehicle_config, self.visualizer_config, init_obstacles=False)
+        sim_copy = type(self)(config_copy, self.vehicle.get_state(), init_obstacles=False)
         # copy obstacles
         sim_copy.add_obstacles_in_WF(self.obstacles_in_WF)
 

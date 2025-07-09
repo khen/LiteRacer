@@ -9,7 +9,7 @@ from numpy import sin, cos, inf, pi
 from LiteRacer.utils.enums import VehicleStatus
 from LiteRacer.components.simulation import Simulation
 from .enums import INCREMENTAL_SIM, ENV_MUTATION_TYPE, ENV_MUTATION_BREADTH, ENV_MUTATION_DEPTH, NODE_SELECTION
-from . import config
+from . import meta_planning_config
 
 
 class ControllableSimulation(Simulation): #TODO: move interface to separate class
@@ -24,32 +24,32 @@ class ControllableSimulation(Simulation): #TODO: move interface to separate clas
         simulation_copy = self.copy()
 
         # find out how many obstacles to remove
-        if config.env_mutation_breadth == ENV_MUTATION_BREADTH.RANDOM:
+        if meta_planning_config.env_mutation_breadth == ENV_MUTATION_BREADTH.RANDOM:
             mutation_breadth = random.randint(1,len(simulation_copy.obstacles_in_WF))
-        elif config.env_mutation_breadth == ENV_MUTATION_BREADTH.CONSTANT:
-            mutation_breadth = config.number_of_obstacles_to_mutate
+        elif meta_planning_config.env_mutation_breadth == ENV_MUTATION_BREADTH.CONSTANT:
+            mutation_breadth = meta_planning_config.number_of_obstacles_to_mutate
 
         # remove old obstacles
         history_compromise_timestamp = inf
         obstacles_removed_in_WF = []
-        if config.env_mutation_type == ENV_MUTATION_TYPE.REMOVE \
-            or config.env_mutation_type == ENV_MUTATION_TYPE.REPLACE:
+        if meta_planning_config.env_mutation_type == ENV_MUTATION_TYPE.REMOVE \
+            or meta_planning_config.env_mutation_type == ENV_MUTATION_TYPE.REPLACE:
             obstacles_removed_in_WF, removed_history_compromise_timestamp = simulation_copy._remove_obstacles_from_env_and_calc_HCTS(mutation_breadth)
             history_compromise_timestamp = min([removed_history_compromise_timestamp,history_compromise_timestamp])
 
         # add new obstacles
         obstacles_added = []
-        if config.env_mutation_type == ENV_MUTATION_TYPE.ADD \
-            or config.env_mutation_type == ENV_MUTATION_TYPE.REPLACE:
+        if meta_planning_config.env_mutation_type == ENV_MUTATION_TYPE.ADD \
+            or meta_planning_config.env_mutation_type == ENV_MUTATION_TYPE.REPLACE:
             # limited depth replacement
-            if config.env_mutation_depth == ENV_MUTATION_DEPTH.LOCAL_PERTUBATION:
+            if meta_planning_config.env_mutation_depth == ENV_MUTATION_DEPTH.LOCAL_PERTUBATION:
                 obstacles_to_add_in_WF = []
                 for obstacle in obstacles_removed_in_WF:
                     # sample a valid obstacle location
                     new_obstacle_is_valid = False
                     while not new_obstacle_is_valid:
-                        new_x = normal(loc=obstacle[0], scale=config.obs_perturbation_stdv)
-                        new_y = normal(loc=obstacle[1], scale=config.obs_perturbation_stdv)
+                        new_x = normal(loc=obstacle[0], scale=meta_planning_config.obs_perturbation_stdv)
+                        new_y = normal(loc=obstacle[1], scale=meta_planning_config.obs_perturbation_stdv)
                         if simulation_copy._track_shape_trimmed.contains(sg.Point([new_x,new_y])):
                             new_obstacle_is_valid = True
                     obstacles_to_add_in_WF.append([new_x,new_y,obstacle[2]])
@@ -63,10 +63,10 @@ class ControllableSimulation(Simulation): #TODO: move interface to separate clas
         
 
         # reset vehicle to past state before restarting the simulation
-        if config.incremental_simulation == INCREMENTAL_SIM.NO:
+        if meta_planning_config.incremental_simulation == INCREMENTAL_SIM.NO:
             simulation_copy.rollback(to_timestamp=0)
             control_steps_saved = 0
-        elif config.incremental_simulation == INCREMENTAL_SIM.YES:
+        elif meta_planning_config.incremental_simulation == INCREMENTAL_SIM.YES:
             simulation_copy.rollback(to_timestamp=(history_compromise_timestamp-1))
             control_steps_saved = history_compromise_timestamp
 
@@ -89,7 +89,7 @@ class ControllableSimulation(Simulation): #TODO: move interface to separate clas
         else:
             # no obstacles given, add random obstacles instead
             # make sure to not pass the upper limit of obstacles
-            num_of_obs_to_add = min([max([0, config.max_number_of_obstacles-len(self.obstacles_in_WF)]),\
+            num_of_obs_to_add = min([max([0, meta_planning_config.max_number_of_obstacles-len(self.obstacles_in_WF)]),\
                                      suggested_number_of_obstacles])
             obstacles_added = self.add_random_obstacles(num_of_obs_to_add, verify_intersection_with_vehicle=False)
 

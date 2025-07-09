@@ -4,6 +4,7 @@ import os, sys
 sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 ###
 
+import simulation_config
 from meta_planning.controllableSimulation import ControllableSimulation
 from meta_planning.metaPlanningTree import MetaPlanningTree
 from LiteRacer.utils.enums import VehicleStatus
@@ -19,7 +20,7 @@ for search_attempt_counter in range(1,3):
     print(f"Search attempt: {search_attempt_counter}")
 
     # "sample" initial meta state
-    simulation = ControllableSimulation()
+    simulation = ControllableSimulation(simulation_config)
     simulation.vehicle.run()
     simulation.kill() # no need to continue this simulation later
 
@@ -31,7 +32,7 @@ for search_attempt_counter in range(1,3):
         print(f"Sampled a failure case as the planning-tree root! ({1} env tested).")
     else:
         # search via meta-planning
-        planner = MetaPlanningTree(simulation)       
+        planner = MetaPlanningTree(simulation, meta_state_config=simulation_config)       
         result = planner.plan()
         # search ended
         if result is not None:

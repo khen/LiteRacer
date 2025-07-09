@@ -1,17 +1,22 @@
 """Run vehicle in specified environment until termination."""
 
+import os
+import argparse
+import importlib.machinery
 import matplotlib.pyplot as plt
 from .components.simulation import Simulation
 from .components.vehicle import Vehicle
 from .utils.enums import Visualization, VehicleStatus
-import argparse
 
 
 # read inline arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--runs', nargs='?', type=int, default=1)
 parser.add_argument('--vis', nargs='?', default='on')
+parser.add_argument('--config', nargs='?', default=os.getcwd())
 args = parser.parse_args()
+
+number_of_runs = args.runs
 
 if args.vis == 'off':
     visualization = Visualization.OFF
@@ -20,13 +25,17 @@ elif args.vis == 'end':
 else:
     visualization = Visualization.ON
 
-number_of_runs = args.runs
+try:
+    config_path = args.config+'//simulation_config.py'
+    config = importlib.machinery.SourceFileLoader('config',config_path).load_module()
+except Exception as e:
+    raise Exception("Could not load configuration file from the given location.")
 
 
 # run the requested amount of times
 for run in range(number_of_runs):
     # init simulation
-    simulation = Simulation()
+    simulation = Simulation(config)
 
     # visualize run
     if visualization == Visualization.ON:

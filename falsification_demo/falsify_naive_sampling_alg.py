@@ -4,6 +4,7 @@ import os, sys
 sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 ###
 
+import simulation_config
 from LiteRacer.components.simulation import Simulation
 from LiteRacer.components.vehicle import Vehicle
 from LiteRacer.utils.enums import VehicleStatus
@@ -16,7 +17,7 @@ while failure_counter < 10:
     test_counter = test_counter + 1
 
     # run vehicle
-    simulation = Simulation()
+    simulation = Simulation(simulation_config)
     simulation.vehicle.run()
         
     # check vehicle status

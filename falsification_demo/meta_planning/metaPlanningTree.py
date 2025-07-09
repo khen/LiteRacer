@@ -3,7 +3,7 @@
 import numpy as np
 from .controllableSimulation import ControllableSimulation
 from .enums import NODE_SELECTION
-from . import config
+from . import meta_planning_config
 
 class MetaPlanningTree:
 
@@ -16,11 +16,12 @@ class MetaPlanningTree:
             self._distance_to_goal_condition = None
 
 
-    def __init__(self, initial_meta_state):
+    def __init__(self, initial_meta_state, meta_state_config=None):
         self.initial_node   = self.Node(initial_meta_state)
-        self.max_steps = config.max_steps
-        self.node_selection = config.node_selection
-        self.goal_bias_rate = config.goal_bias_rate
+        self.meta_state_config = meta_state_config
+        self.max_steps = meta_planning_config.max_steps
+        self.node_selection = meta_planning_config.node_selection
+        self.goal_bias_rate = meta_planning_config.goal_bias_rate
 
         self.number_of_simulated_samples = 0
         self.node_list = [] # TODO: CAN REPLACE THIS WITH A QUEUE
@@ -113,7 +114,7 @@ class MetaPlanningTree:
         """Sample random meta-state."""
 
         # create a new simulation with random obstacles (number of obstacles is assumed to be constant here)
-        rand_simulation = ControllableSimulation()
+        rand_simulation = ControllableSimulation(self.meta_state_config)
 
         # run simulation
         if self.node_selection != NODE_SELECTION.RRT_SIMPLIFIED:

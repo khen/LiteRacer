@@ -5,11 +5,12 @@ sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 ###
 
 import random
+import simulation_config
 from meta_planning.controllableSimulation import ControllableSimulation
 from LiteRacer.components.vehicle import Vehicle
-from LiteRacer.resources.config import env_config
 
 
+NUMBER_OF_OBS = 3
 failure_counter = 0
 total_control_loops = 0
 total_envs = 0
@@ -18,19 +19,16 @@ for search_attempt_counter in range(1,3):
     failure_case_found = False
     print(f"Search attempt: {search_attempt_counter}")
 
-# override env_config, to control the obstacles through the genetic algorithm
-    env_config.number_of_random_obstacles_at_init = 3
     # sample first generation: 4 simulations
-    simulation1 = ControllableSimulation()
-    simulation2 = ControllableSimulation()
-    simulation3 = ControllableSimulation()
-    simulation4 = ControllableSimulation()
+    simulation1 = ControllableSimulation(simulation_config)
+    simulation2 = ControllableSimulation(simulation_config)
+    simulation3 = ControllableSimulation(simulation_config)
+    simulation4 = ControllableSimulation(simulation_config)
     # run the simulation in each simulation
     simulation1.vehicle.run()
     simulation2.vehicle.run()
     simulation3.vehicle.run()
     simulation4.vehicle.run()
-    env_config.number_of_random_obstacles_at_init = 0
 
     generation = 1
     while generation <= 200:
@@ -65,13 +63,13 @@ for search_attempt_counter in range(1,3):
         mutation_simulation2, mutation = selected_simulations[1].apply_random_meta_control()
 
         # based on the DTF, sample two pairs of simulations and merge each pair's obstacle set randomly, to create two "two parent" children
-        crossover_simulation1 = ControllableSimulation()
-        selected_obs = random.sample(selected_simulations[2].obstacles_in_WF + selected_simulations[3].obstacles_in_WF, 3)
+        crossover_simulation1 = ControllableSimulation(simulation_config, init_obstacles=False)
+        selected_obs = random.sample(selected_simulations[2].obstacles_in_WF + selected_simulations[3].obstacles_in_WF, NUMBER_OF_OBS)
         crossover_simulation1.add_obstacles_in_WF(selected_obs)
         crossover_simulation1.vehicle.run()
 
-        crossover_simulation2 = ControllableSimulation()
-        selected_obs = random.sample(selected_simulations[4].obstacles_in_WF + selected_simulations[5].obstacles_in_WF, 3)
+        crossover_simulation2 = ControllableSimulation(simulation_config, init_obstacles=False)
+        selected_obs = random.sample(selected_simulations[4].obstacles_in_WF + selected_simulations[5].obstacles_in_WF, NUMBER_OF_OBS)
         crossover_simulation2.add_obstacles_in_WF(selected_obs)
         crossover_simulation2.vehicle.run()
 

@@ -1,6 +1,6 @@
 """Falsification algorithm parameters."""
 
-from LiteRacer.resources.config import env_config
+import simulation_config
 from .enums import INCREMENTAL_SIM, ENV_MUTATION_TYPE, ENV_MUTATION_BREADTH, ENV_MUTATION_DEPTH, NODE_SELECTION
 
 ### meta-system parameters
@@ -10,7 +10,7 @@ env_mutation_breadth = ENV_MUTATION_BREADTH.RANDOM
 number_of_obstacles_to_mutate = 1 # only applicable when env_mutation_breadth is constant
 env_mutation_depth = ENV_MUTATION_DEPTH.LOCAL_PERTUBATION
 obs_perturbation_stdv = 2 # only applicable when mutation depth is set to perturbation
-max_number_of_obstacles = env_config.number_of_random_obstacles_at_init
+max_number_of_obstacles = simulation_config.env_config.number_of_random_obstacles_at_init
 
 ### meta-planning parameters
 max_steps = 700

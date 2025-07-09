@@ -19,7 +19,7 @@ class Controller():
         
         # initialize controller if not in controller training mode
         if Controller._controllerModel is None:
-            self._set_controller_model(vehicle_config)
+            self._load_controller_model(vehicle_config)
 
     def get_control_action(self, observation_image, steering):
         """Return a control action (speed, steering speed) given a sensor observation and steering value."""
@@ -30,7 +30,8 @@ class Controller():
         return action[0][0]
     
     def arrange_controller_input(self, observation_image, steering):
-        """Arrange raw observation and steering value in input format expected by the NN controller model."""
+        """Mitigate sensor output and control model input formats.
+           Arrange raw observation and steering value in input format expected by the NN controller model."""
 
         observation_array = self._compress_sensor_image_to_array(observation_image)
         # number of channels
@@ -51,17 +52,21 @@ class Controller():
         observation_array = np.asarray(observation_image)
         return observation_array
 
-    def _set_controller_model(self, vehicle_config):
+    def _load_controller_model(self, vehicle_config):
         """Set NN controller model as specified in the configuration."""
 
-        if vehicle_config.controller_model_path is not None and vehicle_config.controller_model_type is not None:
+        try:
             # load stable_baslines model according to it type (training algorithm)
             import stable_baselines3 
             model_type = getattr(stable_baselines3, vehicle_config.controller_model_type)
             load_func = getattr(model_type, 'load')
             import os 
-            dir_path = "\\".join(os.path.realpath(__file__).split("\\")[0:-2])
-            Controller._controllerModel = load_func(dir_path+"\\"+vehicle_config.controller_model_path)
-            #Controller._controllerModel = load_func(vehicle_config.controller_model_path)
-        else:
-            raise Exception('Unable to load vehicle controller model.')
+            if os.path.isabs(vehicle_config.controller_model_path) == True:
+                # given an absolute path to controller model
+                Controller._controllerModel = load_func(vehicle_config.controller_model_path)
+            else:
+                # given relative path, calc in relation to package location
+                parent_dir_of_current_file = "\\".join(os.path.realpath(__file__).split("\\")[0:-2])
+                Controller._controllerModel = load_func(parent_dir_of_current_file+"\\"+vehicle_config.controller_model_path)
+        except Exception as e:
+            raise Warning('Unable to load vehicle controller model.')
