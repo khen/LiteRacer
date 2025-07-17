@@ -1,7 +1,6 @@
 """Vehicle."""
 
-from cmath import inf
-from math import sin, cos, tan, pi
+from math import sin, cos, tan, pi, inf
 from shapely import affinity
 import shapely.geometry as sg
 from ..utils.enums import VehicleStatus, SensingFreq

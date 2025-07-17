@@ -2,7 +2,7 @@
 
 import gc
 from math import sqrt, acos, atan2, sin, cos, pi, inf
-from numpy import arange, infty, vectorize
+from numpy import arange, vectorize
 from matplotlib import patches
 import matplotlib.pyplot as plt
 from types import SimpleNamespace
