@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 import training_config
 from training_util_funcs import collision_distance_score, goal_distance_score, calc_reward
-from simulation_config import vehicle_config
+import simulation_config
 from literacer.utils.enums import VehicleStatus
 from literacer.components.simulation import Simulation
 
@@ -18,11 +18,11 @@ class ControllerGymEnv(gym.Env):
         self.verbose = verbose
 
         self.action_space = gym.spaces.Box(
-            low=np.array([vehicle_config.forward_speed_range[0], vehicle_config.steering_speed_range[0]]),
-            high=np.array([vehicle_config.forward_speed_range[1], vehicle_config.steering_speed_range[1]]))
+            low=np.array([simulation_config.vehicle_config.forward_speed_range[0], simulation_config.vehicle_config.steering_speed_range[0]]),
+            high=np.array([simulation_config.vehicle_config.forward_speed_range[1], simulation_config.vehicle_config.steering_speed_range[1]]))
         
         N_CHANNELS = 1
-        self.observation_scan_shape = (N_CHANNELS, vehicle_config.observation_image_size[0], vehicle_config.observation_image_size[1])
+        self.observation_scan_shape = (N_CHANNELS, simulation_config.vehicle_config.observation_image_size[0], simulation_config.vehicle_config.observation_image_size[1])
         self.observation_space = gym.spaces.Dict({
             "scan":
             gym.spaces.Box(low=0,
@@ -30,8 +30,8 @@ class ControllerGymEnv(gym.Env):
                            shape=self.observation_scan_shape,
                            dtype=np.uint8),
             "steering":
-            gym.spaces.Box(low=vehicle_config.steering_angle_range[0],
-                           high=vehicle_config.steering_angle_range[1],
+            gym.spaces.Box(low=simulation_config.vehicle_config.steering_angle_range[0],
+                           high=simulation_config.vehicle_config.steering_angle_range[1],
                            shape=(1,),
                            dtype=np.float32)
         })
@@ -43,7 +43,7 @@ class ControllerGymEnv(gym.Env):
             print("Training step #"+str(self.step_counter))
 
         # execute given action
-        self.simulation.vehicle.execute_control_action(action, vehicle_config.control_duration)
+        self.simulation.vehicle.execute_control_action(action, simulation_config.vehicle_config.control_duration)
 
         ############## THIS PORTION IS LEFT FOR REFERENCE, REPLACE REWARD CALCULATION WITH YOUR OWN...
 
@@ -82,7 +82,7 @@ class ControllerGymEnv(gym.Env):
         if self.simulation is not None:
             self.simulation.kill()
 
-        self.simulation = Simulation()
+        self.simulation = Simulation(simulation_config)
 
         # for reward calculation
         self.prev_goal_distance_score = goal_distance_score(self.simulation)
