@@ -25,36 +25,36 @@ class Simulation():
         """Initiate a Simulation instance with a single car in a specified environment, according to given configuration."""
 
         # load config
-        self.env_config = config.env_config
-        self.vehicle_config = config.vehicle_config
-        self.visualizer_config = config.visualizer_config
+        self._env_config = config.env_config
+        self._vehicle_config = config.vehicle_config
+        self._visualizer_config = config.visualizer_config
 
         # calc static shapes on first intitalization
         if Simulation._track_shape is None:
-            self._calc_track_shapes(self.env_config)
+            self.__calc_track_shapes(self._env_config)
 
         # init track related config
-        self._env_bounding_box =   [[min([self.visualizer_config.env_min_x_range[0],min(Simulation._X_track_curve)-self.env_config.track_padding]),\
-                                     min([self.visualizer_config.env_min_y_range[0],min(Simulation._Y_track_curve)-self.env_config.track_padding])],\
-                                    [max([self.visualizer_config.env_min_x_range[1],max(Simulation._X_track_curve)+self.env_config.track_padding]),\
-                                     max([self.visualizer_config.env_min_y_range[1],max(Simulation._Y_track_curve)+self.env_config.track_padding])]]
+        self._env_bounding_box =   [[min([self._visualizer_config.env_min_x_range[0],min(Simulation.__X_track_curve)-self._env_config.track_padding]),\
+                                     min([self._visualizer_config.env_min_y_range[0],min(Simulation.__Y_track_curve)-self._env_config.track_padding])],\
+                                    [max([self._visualizer_config.env_min_x_range[1],max(Simulation.__X_track_curve)+self._env_config.track_padding]),\
+                                     max([self._visualizer_config.env_min_y_range[1],max(Simulation.__Y_track_curve)+self._env_config.track_padding])]]
                                      # bottom-left, top-right
 
         # cached dynamic shapes that are updated with vehicle movement
-        self._dynmic_elements_in_figure = []
-        self._observed_sensing_wedge = sg.Point() # these are only practically updated when sensor asks for observed shapes
-        self._observed_track_shape = sg.Point()
-        self._observed_finish_line_shape = sg.Point()
-        self._observed_region_shape = sg.Point()
-        self._latest_sensing_wedge = None
-        self._obst_track_shape = sg.Polygon([[self._env_bounding_box[0][0],self._env_bounding_box[0][1]], \
+        self.__dynmic_elements_in_figure = []
+        self.__observed_sensing_wedge = sg.Point() # these are only practically updated when sensor asks for observed shapes
+        self.__observed_track_shape = sg.Point()
+        self.__observed_finish_line_shape = sg.Point()
+        self.__observed_region_shape = sg.Point()
+        self.__latest_sensing_wedge = None
+        self.__obst_track_shape = sg.Polygon([[self._env_bounding_box[0][0],self._env_bounding_box[0][1]], \
                                              [self._env_bounding_box[1][0],self._env_bounding_box[0][1]], \
                                              [self._env_bounding_box[1][0],self._env_bounding_box[1][1]], \
                                              [self._env_bounding_box[0][0],self._env_bounding_box[1][1]]]) \
                                              .difference(Simulation._track_shape)
         #self._unobst_track_shape = Simulation._track_shape
         # THIS IS A TRICK SO I CAN USE THIS SHAPE TO CALC DISTANCE TO COLLISION, OTHERWISE TRACK EDGE IS COUNTED
-        self._unobst_track_shape = Simulation._track_shape.union(sg.Point(0,0).buffer(self.env_config.track_padding))
+        self.__unobst_track_shape = Simulation._track_shape.union(sg.Point(0,0).buffer(self._env_config.track_padding))
 
         # init plotting environment
         self._simulation_fig = None
@@ -69,21 +69,21 @@ class Simulation():
         if override_initial_state is not None:
             self._initial_vehicle_state = override_initial_state
         else:
-            self._initial_vehicle_state = self.vehicle_config.initial_state
-        vehicle = Vehicle(self, self.vehicle_config, self._initial_vehicle_state)
+            self._initial_vehicle_state = self._vehicle_config.initial_state
+        vehicle = Vehicle(self, self._vehicle_config, self._initial_vehicle_state)
         self.reset_vehicle(vehicle, call_sense_after_reset=False) # will call sense manually after obstacle initialization
 
         # init obstacles (after vehicle, to be able to veify that random obstacles do not overlap with its inital position)
         self.obstacles_in_WF = []
         self._obstacle_circles = []
         if init_obstacles:
-            self.add_obstacles_relative_to_track(self.env_config.predefined_obstacles)
-            if self.env_config.number_of_random_obstacles_at_init > 0:
-                self.add_random_obstacles(self.env_config.number_of_random_obstacles_at_init)
+            self.add_obstacles_relative_to_track(self._env_config.predefined_obstacles)
+            if self._env_config.number_of_random_obstacles_at_init > 0:
+                self.add_random_obstacles(self._env_config.number_of_random_obstacles_at_init)
 
         # sense to  observe new obstacles
         self.vehicle.sensor.sense() # only need to call "sense" the first time. It is later automatically triggered by the state change
-        self._observation_wedges_history.append(self._latest_sensing_wedge)
+        self._observation_wedges_history.append(self.__latest_sensing_wedge)
 
     def rollback(self, to_timestamp, call_sense_after_rollback=True):
         """Rollback the vehicle to a given point in the past."""
@@ -91,61 +91,61 @@ class Simulation():
         to_timestamp = max([0,to_timestamp])
 
         if to_timestamp < len(self._vehicle_state_history):
-                vehicle = Vehicle(self, self.vehicle_config, self._vehicle_state_history[to_timestamp])
+                vehicle = Vehicle(self, self._vehicle_config, self._vehicle_state_history[to_timestamp])
 
         self._vehicle_state_history = self._vehicle_state_history[0:to_timestamp]
         self._vehicle_shape_history = self._vehicle_shape_history[0:to_timestamp]
         self._observation_wedges_history =  self._observation_wedges_history[0:to_timestamp]
-        self._latest_sensing_wedge = None # to make sure we do not add twice this shape to history
-        self._observed_region_shape = sg.Point() # TODO: rollback observed region shape as well (currently resets it)
+        self.__latest_sensing_wedge = None # to make sure we do not add twice this shape to history
+        self.__observed_region_shape = sg.Point() # TODO: rollback observed region shape as well (currently resets it)
 
         self.vehicle.kill()
         del self.vehicle
         self.vehicle = vehicle
             
         # update the simulation according to the new vehicle's state 
-        self._vehicle_state_changed_listener_initial()
+        self.__vehicle_state_changed_listener_initial()
         if call_sense_after_rollback:
             self.vehicle.sensor.sense()
-        self._vehicle_state_changed_listener_final()
+        self.__vehicle_state_changed_listener_final()
 
         # listen to future state changes
-        self.vehicle.add_listener_state(self._vehicle_state_changed_listener_initial, override_priority=True)
-        self.vehicle.add_listener_state(self._vehicle_state_changed_listener_final)
+        self.vehicle.add_listener_state(self.__vehicle_state_changed_listener_initial, override_priority=True)
+        self.vehicle.add_listener_state(self.__vehicle_state_changed_listener_final)
      
     def reset_vehicle(self, vehicle=None, call_sense_after_reset=True):
         """Reset the vehicle to a given state (or the initial state, if none is given). Clears vehicle history."""
 
         if vehicle is None: # reset to initial vehicle state
-            vehicle = Vehicle(self, self.vehicle_config, self._initial_vehicle_state)
+            vehicle = Vehicle(self, self._vehicle_config, self._initial_vehicle_state)
 
         self.vehicle = vehicle
 
         self._vehicle_state_history = []
         self._vehicle_shape_history = []
         self._observation_wedges_history = []
-        self._latest_sensing_wedge = None # to make sure we do not add twice this shape to history
-        self._observed_region_shape = sg.Point()
+        self.__latest_sensing_wedge = None # to make sure we do not add twice this shape to history
+        self.__observed_region_shape = sg.Point()
 
         # update the simulation according to the new vehicle's state 
-        self._vehicle_state_changed_listener_initial()
+        self.__vehicle_state_changed_listener_initial()
         if call_sense_after_reset:
             self.vehicle.sensor.sense() # only need to call "sense" the first time. It is later automatically triggered by the state change
-        self._vehicle_state_changed_listener_final()
+        self.__vehicle_state_changed_listener_final()
 
         # listen to future state changes
-        self.vehicle.add_listener_state(self._vehicle_state_changed_listener_initial, override_priority=True)
-        self.vehicle.add_listener_state(self._vehicle_state_changed_listener_final)
+        self.vehicle.add_listener_state(self.__vehicle_state_changed_listener_initial, override_priority=True)
+        self.vehicle.add_listener_state(self.__vehicle_state_changed_listener_final)
 
     def copy(self):
         """Create a copy of current Simulation."""
 
         config_copy = SimpleNamespace()
-        config_copy.env_config = self.env_config
-        config_copy.vehicle_config = self.vehicle_config
-        config_copy.visualizer_config = self.visualizer_config
+        config_copy.env_config = self._env_config
+        config_copy.vehicle_config = self._vehicle_config
+        config_copy.visualizer_config = self._visualizer_config
         # create basic copy without obstacles
-        sim_copy = type(self)(config_copy, self.vehicle.get_state(), init_obstacles=False)
+        sim_copy = type(self)(config_copy, self.vehicle.state, init_obstacles=False)
         # copy obstacles
         sim_copy.add_obstacles_in_WF(self.obstacles_in_WF)
 
@@ -154,9 +154,9 @@ class Simulation():
         sim_copy._vehicle_state_history = self._vehicle_state_history
         sim_copy._vehicle_shape_history = self._vehicle_shape_history
         sim_copy._observation_wedges_history = self._observation_wedges_history
-        sim_copy._observed_region_shape = sg.Polygon(self._observed_region_shape)
+        sim_copy.__observed_region_shape = sg.Polygon(self.__observed_region_shape)
         sim_copy.vehicle.sensor.sense() # preactically copies the latest observation in the sensor and the observation-related shapes in the simulation copy
-        self._update_vehicle_status() # recalculate the status given the added obstacles
+        self.__update_vehicle_status() # recalculate the status given the added obstacles
 
         return sim_copy
 
@@ -172,15 +172,15 @@ class Simulation():
         """Open simulation visualizer."""
 
         if x is None:
-            x = self.visualizer_config.window_position_x
+            x = self._visualizer_config.window_position_x
         if y is None:
-            y = self.visualizer_config.window_position_y
+            y = self._visualizer_config.window_position_y
         if open_separate_observation_view is None:
-            open_separate_observation_view = self.visualizer_config.open_separate_observation_view
+            open_separate_observation_view = self._visualizer_config.open_separate_observation_view
         
         # init plotting environment
-        self._simulation_fig = plt.figure(figsize=[self._fig_w,self._fig_h], dpi=self.visualizer_config.visualizer_dpi)
-        self._simulation_ax = self._simulation_fig.add_axes([0.0, 0, 1.0, 1])
+        self._simulation_fig = plt.figure(figsize=[self._fig_w,self._fig_h], dpi=self._visualizer_config.visualizer_dpi)
+        self.__simulation_ax = self._simulation_fig.add_axes([0.0, 0, 1.0, 1])
 
         fig_manager = plt.get_current_fig_manager()
         fig_manager.set_window_title("LiteRacer: World View")
@@ -188,7 +188,7 @@ class Simulation():
         if x!=0 or y!=0:
             move_figure(self._simulation_fig, x, y)
 
-        self._plot_simulation()
+        self.__plot_simulation()
         self._simulation_fig.show()
 
         # track if figure is open or close (to know if should update plot)
@@ -236,14 +236,14 @@ class Simulation():
         x_along_track, y_along_track, radius = new_obstacle[0], new_obstacle[1],new_obstacle[2]
 
         # find requested position on the track as [x,y]
-        x_length = len(self._track_boundary)/2
-        min_x = round(x_length*self.env_config.start_zone_portion)
-        max_x = round(x_length*(1-self.env_config.finish_line_portion)-radius/self.env_config.track_percision)
+        x_length = len(self.__track_boundary)/2
+        min_x = round(x_length*self._env_config.start_zone_portion)
+        max_x = round(x_length*(1-self._env_config.finish_line_portion)-radius/self._env_config.track_percision)
 
         selected_x = round(min_x + x_along_track*(max_x-min_x))
         
-        track_boundary_point1 = self._track_boundary[selected_x]
-        track_boundary_point2 = self._track_boundary[-1-selected_x]
+        track_boundary_point1 = self.__track_boundary[selected_x]
+        track_boundary_point2 = self.__track_boundary[-1-selected_x]
 
         new_obstacle_in_xy = [(y_along_track*track_boundary_point1[0]+(1-y_along_track)*track_boundary_point2[0]),\
                             (y_along_track*track_boundary_point1[1]+(1-y_along_track)*track_boundary_point2[1]), radius]
@@ -263,8 +263,8 @@ class Simulation():
         # if obstacle is legal, i.e., does not intersect with vehicle, add it, otherwise, abort
         if verify_intersection_with_vehicle == False or obstacle_circle.intersection(self._vehicle_shape).is_empty:
             self._obstacle_circles = self._obstacle_circles + [ obstacle_circle ]
-            self._obst_track_shape = self._obst_track_shape.union(obstacle_circle)
-            self._unobst_track_shape = self._unobst_track_shape.difference(obstacle_circle)
+            self.__obst_track_shape = self.__obst_track_shape.union(obstacle_circle)
+            self.__unobst_track_shape = self.__unobst_track_shape.difference(obstacle_circle)
             self.obstacles_in_WF = self.obstacles_in_WF + [ new_obstacle ]
             success = True
         else:
@@ -276,7 +276,7 @@ class Simulation():
         """Add multiple new random obstacles. Return a list of the added obstacles in WF."""
 
         if override_radius is None:
-            override_radius = self.env_config.radius_of_random_obstacles
+            override_radius = self._env_config.radius_of_random_obstacles
         obstacles_added = []
         for i in range(num_of_obs_to_add): 
             new_obs = self._add_obstacle_relative_to_track([random.random(), random.random(), override_radius], verify_intersection_with_vehicle)
@@ -290,12 +290,12 @@ class Simulation():
 
         while True: # sample positions and try to add a random obstacle, until a legal one is found
             # sample a random position on the track
-            x_length = len(self._track_boundary)/2
-            random_x = random.randint(round(x_length*self.env_config.start_zone_portion),\
-                                      round(x_length*(1-self.env_config.finish_line_portion)-radius/self.env_config.track_percision))
+            x_length = len(self.__track_boundary)/2
+            random_x = random.randint(round(x_length*self._env_config.start_zone_portion),\
+                                      round(x_length*(1-self._env_config.finish_line_portion)-radius/self._env_config.track_percision))
 
-            track_boundary_point1 = self._track_boundary[random_x]
-            track_boundary_point2 = self._track_boundary[-1-random_x]
+            track_boundary_point1 = self.__track_boundary[random_x]
+            track_boundary_point2 = self.__track_boundary[-1-random_x]
 
             random_y = random.random()
 
@@ -327,18 +327,18 @@ class Simulation():
 
         obstacles_removed = []
         for obs_index in obs_indices:
-            obstacles_removed.append(self._remove_obstacle(obs_index)) 
+            obstacles_removed.append(self.__remove_obstacle(obs_index)) 
         return obstacles_removed
 
-    def _remove_obstacle(self, obs_index):
+    def __remove_obstacle(self, obs_index):
         """Remove an obstacle at given index from obstacle list."""
 
         obstacle_removed = self.obstacles_in_WF[obs_index]
         obstacle_circle = self._obstacle_circles[obs_index]
 
         # TODO: DOES NOT WORK WELL WHEN OBSTACLE IS PARTIALLY OUT OF TRACK SHAPE
-        self._obst_track_shape = self._obst_track_shape.difference(obstacle_circle)
-        self._unobst_track_shape = self._unobst_track_shape.union(obstacle_circle)
+        self.__obst_track_shape = self.__obst_track_shape.difference(obstacle_circle)
+        self.__unobst_track_shape = self.__unobst_track_shape.union(obstacle_circle)
 
         del self.obstacles_in_WF[obs_index]
         del self._obstacle_circles[obs_index]
@@ -355,7 +355,7 @@ class Simulation():
 
             # choose a random obstacle and remove it
             index = random.randint(0,len(self.obstacles_in_WF)-1)
-            obstacles_removed.append(self._remove_obstacle(index)) 
+            obstacles_removed.append(self.__remove_obstacle(index)) 
         return obstacles_removed
 
     def get_vehicle_progress_along_track(self):
@@ -363,13 +363,13 @@ class Simulation():
 
         # default - calculated based on the vehicle frame of origin (back, center)
         
-        state = self.vehicle.get_state()
+        state = self.vehicle.state
         x = state[0]
         y = state[1]
 
-        min_idxs, distances = min_distance_from_curve(Simulation._X_track_curve, Simulation._Y_track_curve, x, y)
-        closest_x = Simulation._X_track_curve[min_idxs[-1]] # when multiple points, take the one furthest down the track
-        return self.env_config.track_arc_length(closest_x)/Simulation._track_length
+        min_idxs, distances = min_distance_from_curve(Simulation.__X_track_curve, Simulation.__Y_track_curve, x, y)
+        closest_x = Simulation.__X_track_curve[min_idxs[-1]] # when multiple points, take the one furthest down the track
+        return self._env_config.track_arc_length(closest_x)/Simulation.__track_length
 
 
     def get_distance_to_collision_throughout_history(self, only_in_sensing_range=True): 
@@ -385,7 +385,7 @@ class Simulation():
     def get_distance_to_collision(self, timestamp=-1, only_in_sensing_range=True):
         """Return the distance of vehicle (at given timestamp) from the obstacles/shoulders."""
         
-        safety_boundary = self._unobst_track_shape.boundary
+        safety_boundary = self.__unobst_track_shape.boundary
         vehicle_shape = self._vehicle_shape_history[timestamp]
 
         if only_in_sensing_range:
@@ -394,7 +394,7 @@ class Simulation():
             if not observed_boundary.is_empty:
                 d = vehicle_shape.distance(observed_boundary)
             else:
-                d = 2*self.env_config.track_padding # upper bound
+                d = 2*self._env_config.track_padding # upper bound
         else:
             d = vehicle_shape.distance(safety_boundary)
 
@@ -404,26 +404,26 @@ class Simulation():
         """Calculate and return the shapes representing the observation given the sensor information and vehicle location."""
         
         # calc observation in world frame
-        self._observed_sensing_wedge, self._observed_track_shape, self._observed_finish_line_shape = self._calc_observed_shapes_in_WF(SF_sensing_wedge, sensor_range)
+        self.__observed_sensing_wedge, self.__observed_track_shape, self.__observed_finish_line_shape = self.__calc_observed_shapes_in_WF(SF_sensing_wedge, sensor_range)
 
         # tranaform observation to sensor frame
-        SF_observed_track_shape = self.vehicle.VF_to_SF(self._WF_to_VF(self._observed_track_shape))
-        SF_observed_finish_line_shape = self.vehicle.VF_to_SF(self._WF_to_VF(self._observed_finish_line_shape))
-        SF_observed_sensing_wedge = self.vehicle.VF_to_SF(self._WF_to_VF(self._observed_sensing_wedge))
+        SF_observed_track_shape = self.vehicle.VF_to_SF(self._WF_to_VF(self.__observed_track_shape))
+        SF_observed_finish_line_shape = self.vehicle.VF_to_SF(self._WF_to_VF(self.__observed_finish_line_shape))
+        SF_observed_sensing_wedge = self.vehicle.VF_to_SF(self._WF_to_VF(self.__observed_sensing_wedge))
 
         # updates the history -- must practically simplify (approximate) the polygon for performance issues...
         simplify_tolerance = .05
-        self._observed_region_shape = self._observed_region_shape.union(self._observed_sensing_wedge).simplify(tolerance=simplify_tolerance, preserve_topology=True).buffer(0)
+        self.__observed_region_shape = self.__observed_region_shape.union(self.__observed_sensing_wedge).simplify(tolerance=simplify_tolerance, preserve_topology=True).buffer(0)
 
         return SF_observed_track_shape, SF_observed_finish_line_shape, SF_observed_sensing_wedge
 
-    def _calc_observed_shapes_in_WF(self, SF_sensing_wedge, sensor_range):
+    def __calc_observed_shapes_in_WF(self, SF_sensing_wedge, sensor_range):
         """Calculate the shapes representing the current observation, given the sensor information and vehicle location."""
 
         sensing_wedge = self._VF_to_WF(self.vehicle.SF_to_VF(SF_sensing_wedge))
-        sensor_point = self._VF_to_WF(self.vehicle.VF_sensor_origin)
+        sensor_point = self._VF_to_WF(self.vehicle._VF_sensor_origin)
         
-        self._latest_sensing_wedge = sensing_wedge # to maintain observation history
+        self.__latest_sensing_wedge = sensing_wedge # to maintain observation history
 
         # for every obstacle calc hidden areas behind it
         observed_sensing_wedge = sensing_wedge
@@ -467,21 +467,21 @@ class Simulation():
                     #global hidden_shape; hidden_shape = sensing_wedge.intersection(hidden_shape_bounding_trap)
                     observed_sensing_wedge = observed_sensing_wedge.difference(hidden_shape_bounding_trapezoid)
 
-        observed_track_shape = self._unobst_track_shape.intersection(observed_sensing_wedge)
+        observed_track_shape = self.__unobst_track_shape.intersection(observed_sensing_wedge)
         observed_track_shape = observed_track_shape.difference(self._vehicle_shape)
         observed_finish_line_shape = self._finish_line_shape.intersection(observed_sensing_wedge)
         observed_finish_line_shape = observed_finish_line_shape.difference(self._vehicle_shape)
 
         return observed_sensing_wedge, observed_track_shape, observed_finish_line_shape
 
-    def _plot_simulation(self):
+    def __plot_simulation(self):
         """Plots simulation from scratch."""
         
-        self._simulation_ax.cla()
+        self.__simulation_ax.cla()
         # self._simulation_ax.title.set_text("World View")
-        self._simulation_ax.set_aspect('equal')
-        self._simulation_ax.set_xlim([self._env_bounding_box[0][0], self._env_bounding_box[1][0]])
-        self._simulation_ax.set_ylim([self._env_bounding_box[0][1], self._env_bounding_box[1][1]])
+        self.__simulation_ax.set_aspect('equal')
+        self.__simulation_ax.set_xlim([self._env_bounding_box[0][0], self._env_bounding_box[1][0]])
+        self.__simulation_ax.set_ylim([self._env_bounding_box[0][1], self._env_bounding_box[1][1]])
         # remove annotaion of axes
         plt.tick_params(
             axis='both',       # changes apply to the x-axis
@@ -495,76 +495,74 @@ class Simulation():
         #self._simulation_fig.tight_layout()
 
         # track
-        self._simulation_ax.plot(Simulation._X_track_curve, Simulation._Y_track_curve, color='k', linestyle='dotted', alpha=0.05)
-        self._simulation_ax.add_patch(plotting.patch_from_polygon(Simulation._track_shape, linewidth=1, ec='k',fc='k', alpha=0.3))
-        self._simulation_ax.add_patch(plotting.patch_from_polygon(Simulation._finish_line_shape, fc='k', alpha=0.5))
+        self.__simulation_ax.plot(Simulation.__X_track_curve, Simulation.__Y_track_curve, color='k', linestyle='dotted', alpha=0.05)
+        self.__simulation_ax.add_patch(plotting.patch_from_polygon(Simulation._track_shape, linewidth=1, ec='k',fc='k', alpha=0.3))
+        self.__simulation_ax.add_patch(plotting.patch_from_polygon(Simulation._finish_line_shape, fc='k', alpha=0.5))
 
         # obstacles
         for i in range(len(self._obstacle_circles)):
-            self._simulation_ax.add_patch(plotting.patch_from_polygon(self._obstacle_circles[i], linewidth=1, ec='k', fc='darkorange'))
+            self.__simulation_ax.add_patch(plotting.patch_from_polygon(self._obstacle_circles[i], linewidth=1, ec='k', fc='darkorange'))
 
         # vehicle history
         for vehicle_state in self._vehicle_state_history:
             last_vehicle_position = vehicle_state[0:2]
-            self._simulation_ax.add_patch(patches.Circle((last_vehicle_position[0], last_vehicle_position[1]), radius=0.05, linewidth=0, fc='lightgreen', alpha=0.5))
+            self.__simulation_ax.add_patch(patches.Circle((last_vehicle_position[0], last_vehicle_position[1]), radius=0.05, linewidth=0, fc='lightgreen', alpha=0.5))
         
-        self._update_dynamic_elements_in_plot()
+        self.__update_dynamic_elements_in_plot()
 
         self._simulation_fig.canvas.draw()
         self._simulation_fig.canvas.flush_events()
 
-    def _update_plot(self):
+    def __update_plot(self):
         """Update the simulation plot based on the latest vehicle movement (remove old and add new dyanmic objects)."""
 
         # vehicle history
         last_vehicle_position = self._vehicle_state_history[-1][0:2]
-        self._simulation_ax.add_patch(patches.Circle((last_vehicle_position[0], last_vehicle_position[1]), radius=0.05, linewidth=0, fc='lightgreen', alpha=0.5))
+        self.__simulation_ax.add_patch(patches.Circle((last_vehicle_position[0], last_vehicle_position[1]), radius=0.05, linewidth=0, fc='lightgreen', alpha=0.5))
                 
-        for element in self._dynmic_elements_in_figure:
+        for element in self.__dynmic_elements_in_figure:
             element.remove()
-        self._dynmic_elements_in_figure = []
+        self.__dynmic_elements_in_figure = []
 
-        self._update_dynamic_elements_in_plot()
+        self.__update_dynamic_elements_in_plot()
 
         self._simulation_fig.canvas.draw()
         self._simulation_fig.canvas.flush_events()
 
-    def _update_dynamic_elements_in_plot(self):
+    def __update_dynamic_elements_in_plot(self):
         """Add dyanmic objects on the simulation plot based on the latest vehicle movement ."""
 
         # vehicle
-        self._dynmic_elements_in_figure.append(self._simulation_ax.add_patch(plotting.patch_from_polygon(self._vehicle_shape, fc='lightgreen', ec='k')))
+        self.__dynmic_elements_in_figure.append(self.__simulation_ax.add_patch(plotting.patch_from_polygon(self._vehicle_shape, fc='lightgreen', ec='k')))
 
         # steering angle indicator
         arrow_point = self._VF_to_WF(sg.Point(self.vehicle.length-self.vehicle.width,0))
         absolute_steering_angle = self.vehicle._state[2]+self.vehicle._state[3]
-        self._dynmic_elements_in_figure.append(self._simulation_ax.arrow(arrow_point.x,arrow_point.y, 0.01*cos(absolute_steering_angle), 0.01*sin(absolute_steering_angle),\
+        self.__dynmic_elements_in_figure.append(self.__simulation_ax.arrow(arrow_point.x,arrow_point.y, 0.01*cos(absolute_steering_angle), 0.01*sin(absolute_steering_angle),\
                                                 head_width=self.vehicle.width/2, head_length=self.vehicle.width, linewidth=0, color='darkgreen'))
 
         # vehicle frame origin
-        self._dynmic_elements_in_figure.append(self._simulation_ax.add_patch(patches.Circle((self.vehicle._state[0], self.vehicle._state[1]), radius=0.05, linewidth=0, fc='darkgreen')))
+        self.__dynmic_elements_in_figure.append(self.__simulation_ax.add_patch(patches.Circle((self.vehicle._state[0], self.vehicle._state[1]), radius=0.05, linewidth=0, fc='darkgreen')))
 
-        if self.visualizer_config.draw_observation_in_visualizer == DrawObservationInVisualizer.CURRENT_AND_HISTORY:
+        if self._visualizer_config.draw_observation_in_visualizer == DrawObservationInVisualizer.CURRENT_AND_HISTORY:
 
             # sensing history
-            if not self._observed_region_shape.is_empty:
-                self._dynmic_elements_in_figure.append(self._simulation_ax.add_patch(plotting.patch_from_polygon(self._observed_region_shape, linewidth=0, color='r', alpha=0.05)))
+            if not self.__observed_region_shape.is_empty:
+                self.__dynmic_elements_in_figure.append(self.__simulation_ax.add_patch(plotting.patch_from_polygon(self.__observed_region_shape, linewidth=0, color='r', alpha=0.05)))
                 
-        if self.visualizer_config.draw_observation_in_visualizer == DrawObservationInVisualizer.CURRENT_AND_HISTORY or self.visualizer_config.draw_observation_in_visualizer == DrawObservationInVisualizer.CURRENT:
+        if self._visualizer_config.draw_observation_in_visualizer == DrawObservationInVisualizer.CURRENT_AND_HISTORY or self._visualizer_config.draw_observation_in_visualizer == DrawObservationInVisualizer.CURRENT:
             # observed track    
-            if not self._observed_track_shape.is_empty and (self._observed_track_shape.geom_type == 'Polygon' or self._observed_track_shape.geom_type == 'MultiPolygon'):
-                self._dynmic_elements_in_figure.append(self._simulation_ax.add_patch(plotting.patch_from_polygon(self._observed_track_shape, linewidth=0, fc='r', ec='k', alpha=0.2)))
+            if not self.__observed_track_shape.is_empty and (self.__observed_track_shape.geom_type == 'Polygon' or self.__observed_track_shape.geom_type == 'MultiPolygon'):
+                self.__dynmic_elements_in_figure.append(self.__simulation_ax.add_patch(plotting.patch_from_polygon(self.__observed_track_shape, linewidth=0, fc='r', ec='k', alpha=0.2)))
 
             # observed finish line
-            if not self._observed_finish_line_shape.is_empty and (self._observed_finish_line_shape.geom_type == 'Polygon' or self._observed_finish_line_shape.geom_type == 'MultiPolygon'):
-                self._dynmic_elements_in_figure.append(self._simulation_ax.add_patch(plotting.patch_from_polygon(self._observed_finish_line_shape, linewidth=0, fc='r', ec='k', alpha=0.5)))
+            if not self.__observed_finish_line_shape.is_empty and (self.__observed_finish_line_shape.geom_type == 'Polygon' or self.__observed_finish_line_shape.geom_type == 'MultiPolygon'):
+                self.__dynmic_elements_in_figure.append(self.__simulation_ax.add_patch(plotting.patch_from_polygon(self.__observed_finish_line_shape, linewidth=0, fc='r', ec='k', alpha=0.5)))
 
             # sensing wedge
-            if not self._observed_sensing_wedge.is_empty:
+            if not self.__observed_sensing_wedge.is_empty:
                 #ax.add_patch(plotting.patch_from_polygon(hidden_shape, color='orange', alpha=0.5))
-                self._dynmic_elements_in_figure.append(self._simulation_ax.add_patch(plotting.patch_from_polygon(self._observed_sensing_wedge, linewidth=0, color='r', alpha=0.2)))
-
-
+                self.__dynmic_elements_in_figure.append(self.__simulation_ax.add_patch(plotting.patch_from_polygon(self.__observed_sensing_wedge, linewidth=0, color='r', alpha=0.2)))
 
 
     def _WF_to_VF(self, WF_shape):
@@ -577,46 +575,46 @@ class Simulation():
 
         return affinity.translate(affinity.rotate(VF_shape, self.vehicle._state[2], origin=(0,0), use_radians=True), self.vehicle._state[0], self.vehicle._state[1])
 
-    def _update_vehicle_status(self):
+    def __update_vehicle_status(self):
         """Check if vehicle is safe/unsafe/reached goal (set the vehicle status and also return it)."""
         
         if self._finish_line_shape.contains(self._vehicle_shape):
             self.vehicle.status = VehicleStatus.FINISH
             return VehicleStatus.FINISH
-        elif self._unobst_track_shape.contains(self._vehicle_shape):
+        elif self.__unobst_track_shape.contains(self._vehicle_shape):
             self.vehicle.status = VehicleStatus.SAFE
             return VehicleStatus.SAFE
         else:
             self.vehicle.status = VehicleStatus.UNSAFE
             return VehicleStatus.UNSAFE
 
-    def _vehicle_state_changed_listener_initial(self):
+    def __vehicle_state_changed_listener_initial(self):
         """Listener to vehicle state changes (called first)."""
 
-        self._vehicle_shape = self._VF_to_WF(Vehicle.VF_shape)
+        self._vehicle_shape = self._VF_to_WF(self.vehicle.VF_shape)
 
-    def _vehicle_state_changed_listener_final(self):
+    def __vehicle_state_changed_listener_final(self):
         """Listener to vehicle state changes (called at the end)."""
 
-        self._update_vehicle_status()
+        self.__update_vehicle_status()
         if self._is_simulation_fig_open:
-            self._update_plot()
+            self.__update_plot()
 
         # update history cache
-        self._vehicle_state_history.append(self.vehicle.get_state())
+        self._vehicle_state_history.append(self.vehicle.state)
         self._vehicle_shape_history.append(self._vehicle_shape)
-        if self._latest_sensing_wedge is not None: # in initialization observation would be None, adds to history manually in ctor
-            self._observation_wedges_history.append(self._latest_sensing_wedge)
+        if self.__latest_sensing_wedge is not None: # in initialization observation would be None, adds to history manually in ctor
+            self._observation_wedges_history.append(self.__latest_sensing_wedge)
 
     @staticmethod
-    def _calc_track_shapes(env):
+    def __calc_track_shapes(env):
         """Calculate track and finish line shapes."""
 
         # calc track curve
         track_func_vectorized = vectorize(env.track_func)
-        Simulation._X_track_curve = arange(env.X_track_range[0], env.X_track_range[1]+env.track_percision, env.track_percision)
-        Simulation._Y_track_curve = track_func_vectorized(Simulation._X_track_curve)
-        Simulation._track_length = env.track_arc_length(env.X_track_range[1])
+        Simulation.__X_track_curve = arange(env.X_track_range[0], env.X_track_range[1]+env.track_percision, env.track_percision)
+        Simulation.__Y_track_curve = track_func_vectorized(Simulation.__X_track_curve)
+        Simulation.__track_length = env.track_arc_length(env.X_track_range[1])
 
         # calc track boundary
         X_track_top_boundary = []
@@ -624,9 +622,9 @@ class Simulation():
         X_track_btm_boundary = []
         Y_track_btm_boundary = []
 
-        for j in range(len(Simulation._X_track_curve)):
-            x = Simulation._X_track_curve[j]
-            y = Simulation._Y_track_curve[j]
+        for j in range(len(Simulation.__X_track_curve)):
+            x = Simulation.__X_track_curve[j]
+            y = Simulation.__Y_track_curve[j]
             #y = scene.track_func(x)
             #Simulation._Y_track_curve.append(y)
 
@@ -670,14 +668,14 @@ class Simulation():
                     Y_track_btm_boundary.append(bp1_y)
 
         track_boundary = zip(X_track_top_boundary+X_track_btm_boundary[::-1],Y_track_top_boundary+Y_track_btm_boundary[::-1])
-        Simulation._track_boundary = [[p[0],p[1]] for p in track_boundary]
+        Simulation.__track_boundary = [[p[0],p[1]] for p in track_boundary]
 
-        boundary_len = len(Simulation._track_boundary)        
-        Simulation._btm_boundary_line = sg.LineString(Simulation._track_boundary[0:int(boundary_len/2)])
-        Simulation._top_boundary_line = sg.LineString(Simulation._track_boundary[boundary_len-1:int(boundary_len/2)-1:-1])
+        boundary_len = len(Simulation.__track_boundary)        
+        Simulation.__btm_boundary_line = sg.LineString(Simulation.__track_boundary[0:int(boundary_len/2)])
+        Simulation.__top_boundary_line = sg.LineString(Simulation.__track_boundary[boundary_len-1:int(boundary_len/2)-1:-1])
 
         # calc track shape
-        Simulation._track_shape = sg.Polygon(list(Simulation._track_boundary))
+        Simulation._track_shape = sg.Polygon(list(Simulation.__track_boundary))
         
         # calc track finish line shape
         finish_line_width = round(env.finish_line_portion*len(X_track_top_boundary)) # in terms of percision units

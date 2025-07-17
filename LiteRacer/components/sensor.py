@@ -15,16 +15,15 @@ from ..utils.enums import SensingFreq
 class Sensor():
     """Radar sensor."""
 
-    _SF_sensing_wedge = None
-    """Shape of sensing wedge (static to avoid recalculation)."""
-
     # CTOR
     def __init__(self, simulator, vehicle_config):
 
         self._simulator = simulator
         self._observation = None # a list of detected shapes in sensor frame [track, finish line]
         self._observation_listeners = []
-        self._sensing_freq = vehicle_config.sensing_freq
+        self.max_range = vehicle_config.sensor_max_range
+        self.angle_range = vehicle_config.sensor_angle_range
+        self.__sensing_freq = vehicle_config.sensing_freq # only to optimize performance
 
         # init plotting environment for observations (required to create observation images)
         # must actively close fig window when sensor is deactivated
@@ -33,26 +32,25 @@ class Sensor():
         # self._sensor_fig = plt.figure(figsize=[fig_w,fig_h+0.25], dpi=100)
         self._sensor_fig = plt.figure(figsize=[sensor_frame_width,sensor_frame_height], dpi=vehicle_config.sensor_dpi)
         # self._sensor_ax = self._sensor_fig.add_axes([0, 0, 1, fig_h/(fig_h+0.25)])
-        self._sensor_ax = self._sensor_fig.add_axes([0, 0, 1, sensor_frame_height/sensor_frame_height])
+        self.__sensor_ax = self._sensor_fig.add_axes([0, 0, 1, sensor_frame_height/sensor_frame_height])
         
         fig_manager = plt.get_current_fig_manager()
         fig_manager.set_window_title("LiteRacer: Sensor View")
 
-        self._sensor_max_range = vehicle_config.sensor_max_range
-        self._angle_range = vehicle_config.sensor_angle_range
-        if Sensor._SF_sensing_wedge is None:
-            Sensor._SF_sensing_wedge = Sensor._calc_SF_sensing_wedge(self._sensor_max_range, self._angle_range)
-        self._plot_observation()
+        self._SF_sensing_wedge = self.__calc_SF_sensing_wedge()
+        self.__plot_observation()
 
         # cached variables for efficient observation plotting
-        self._dynmic_elements_in_figure = []
-        self._latest_observation_image = None
+        self.__dynmic_elements_in_figure = []
+        self.__latest_observation_image = None
 
-    def get_observation(self):
+    @property
+    def observation(self):
         """Get latest observation."""
         return self._observation
 
-    def set_observation(self, new_observation):
+    @observation.setter
+    def observation(self, new_observation):
         """Update the observation and invoke listener."""
 
         if self._observation != new_observation:
@@ -60,10 +58,10 @@ class Sensor():
             self._observation = new_observation
 
             # clear previous cached observation image
-            self._latest_observation_image = None
+            self.__latest_observation_image = None
 
             # update the observation fig
-            self._update_observation_plot()
+            self.__update_observation_plot()
 
             # invoke listening functions
             for listener in self._observation_listeners:
@@ -95,31 +93,31 @@ class Sensor():
 
         # ask for observation from the simulator, given the sensor parameters
         try:
-            SF_observed_track_shape, SF_observed_finish_line_shape, x = self._simulator.calc_observed_shapes_in_SF(Sensor._SF_sensing_wedge,self._sensor_max_range)
+            SF_observed_track_shape, SF_observed_finish_line_shape, x = self._simulator.calc_observed_shapes_in_SF(self._SF_sensing_wedge,self.max_range)
         except Exception as e:
             # raise Exception("Observation failed. Probably sensor ovelaps with an obstacle.")
-            self.set_observation(None)
+            self.observation = None
             return None
 
         # update the observation
-        self.set_observation([ SF_observed_track_shape, SF_observed_finish_line_shape ])
+        self.observation = [ SF_observed_track_shape, SF_observed_finish_line_shape ]
 
         return self._observation
 
     def get_observation_image(self, FROM_SCRATCH=False):
         """Return an image of the latest observation, or a given observation."""
 
-        if self._sensing_freq == SensingFreq.ON_REQUEST:
+        if self.__sensing_freq == SensingFreq.ON_REQUEST:
             # sensing is not called automatically, so must call manually
             self.sense()
 
-        if self._latest_observation_image is not None:
+        if self.__latest_observation_image is not None:
             # return the chached image, if observation has no changed since last call 
-            return self._latest_observation_image
+            return self.__latest_observation_image
 
         # plot observation from scratch on axis before saving the image
         if FROM_SCRATCH:
-            self._plot_observation()
+            self.__plot_observation()
 
         # create image from fig
         # image_buffer = BytesIO()        
@@ -146,7 +144,7 @@ class Sensor():
         # observation_image.save(f'./obs/{round(time.time() * 1000)}.png')
 
         # cache the observation image to avoid recalculating it on future function calls
-        self._latest_observation_image = observation_image
+        self.__latest_observation_image = observation_image
         
         return observation_image
 
@@ -156,42 +154,42 @@ class Sensor():
         self._observation_listeners = []
         self.close_sensor_view()
 
-    def _plot_observation(self):
+    def __plot_observation(self):
         """Plot from scratch latest observation on the sensor axis."""
         
         # reset axis
-        self._sensor_ax.cla()
+        self.__sensor_ax.cla()
         # self._sensor_ax.title.set_text("Egocentric View")
-        self._sensor_ax.set_axis_off()
-        self._sensor_ax.set_xlim([0, self._sensor_max_range])
-        self._sensor_ax.set_ylim([-self._sensor_max_range, self._sensor_max_range])
+        self.__sensor_ax.set_axis_off()
+        self.__sensor_ax.set_xlim([0, self.max_range])
+        self.__sensor_ax.set_ylim([-self.max_range, self.max_range])
 
         # plot constant shapes
-        SF_sensing_bounding_box = sg.Polygon([(0,-self._sensor_max_range),(0,self._sensor_max_range),(self._sensor_max_range,self._sensor_max_range),(self._sensor_max_range,-self._sensor_max_range)])
-        self._sensor_ax.add_patch(plotting.patch_from_polygon(SF_sensing_bounding_box, fc='k', alpha=0.85))
+        SF_sensing_bounding_box = sg.Polygon([(0,-self.max_range),(0,self.max_range),(self.max_range,self.max_range),(self.max_range,-self.max_range)])
+        self.__sensor_ax.add_patch(plotting.patch_from_polygon(SF_sensing_bounding_box, fc='k', alpha=0.85))
         
-        SF_out_of_range_shape = SF_sensing_bounding_box.difference(Sensor._SF_sensing_wedge)
-        self._sensor_ax.add_patch(plotting.patch_from_polygon(SF_out_of_range_shape, fc='k'))
+        SF_out_of_range_shape = SF_sensing_bounding_box.difference(self._SF_sensing_wedge)
+        self.__sensor_ax.add_patch(plotting.patch_from_polygon(SF_out_of_range_shape, fc='k'))
 
         # plot dynamic shapes
-        self._plot_dynamic_elements()
+        self.__plot_dynamic_elements()
 
         self._sensor_fig.canvas.draw()
         self._sensor_fig.canvas.flush_events()
 
-    def _update_observation_plot(self):
+    def __update_observation_plot(self):
         """Update the obsrvation plot based on the latest observation (removes old and adds new dyanmic objects)."""
 
-        for element in self._dynmic_elements_in_figure:
+        for element in self.__dynmic_elements_in_figure:
             element.remove()
-        self._dynmic_elements_in_figure = []
+        self.__dynmic_elements_in_figure = []
 
-        self._plot_dynamic_elements()
+        self.__plot_dynamic_elements()
         
         self._sensor_fig.canvas.draw()
         self._sensor_fig.canvas.flush_events()
 
-    def _plot_dynamic_elements(self):
+    def __plot_dynamic_elements(self):
         """Add dyanmic objects on the obsrvation plot based on the given observation."""
 
         if self._observation is None:
@@ -201,19 +199,20 @@ class Sensor():
         SF_observed_finish_line_shape = self._observation[1]
         # observed track
         if not SF_observed_track_shape.is_empty and (SF_observed_track_shape.geom_type == 'Polygon' or SF_observed_track_shape.geom_type == 'MultiPolygon'):
-            self._dynmic_elements_in_figure.append(self._sensor_ax.add_patch(plotting.patch_from_polygon(SF_observed_track_shape, linewidth=0, fc='w', alpha=0.6)))
+            self.__dynmic_elements_in_figure.append(self.__sensor_ax.add_patch(plotting.patch_from_polygon(SF_observed_track_shape, linewidth=0, fc='w', alpha=0.6)))
 
         # observed finish line
         if not SF_observed_finish_line_shape.is_empty and (SF_observed_finish_line_shape.geom_type == 'Polygon' or SF_observed_finish_line_shape.geom_type == 'MultiPolygon'):
-            self._dynmic_elements_in_figure.append(self._sensor_ax.add_patch(plotting.patch_from_polygon(SF_observed_finish_line_shape, linewidth=0, fc='w')))
+            self.__dynmic_elements_in_figure.append(self.__sensor_ax.add_patch(plotting.patch_from_polygon(SF_observed_finish_line_shape, linewidth=0, fc='w')))
             
-    @staticmethod
-    def _calc_SF_sensing_wedge(sensor_max_range, angle_range):
+    
+    def __calc_SF_sensing_wedge(self):
         """Return the shape of the sensing wedge in the sensor frame based on sensor parameters."""
 
+        angle_range = self.angle_range
         half_angle = (angle_range[1]-angle_range[0])/2
 
-        bounding_triang_ray_length = (1/cos(half_angle))*sensor_max_range
+        bounding_triang_ray_length = (1/cos(half_angle))*self.max_range
         SF_sensing_bounding_triangle = sg.Polygon([(0,0), (bounding_triang_ray_length*cos(angle_range[0]),bounding_triang_ray_length*sin(angle_range[0])), \
                                                         (bounding_triang_ray_length*cos(angle_range[1]),bounding_triang_ray_length*sin(angle_range[1]))])
-        return SF_sensing_bounding_triangle.intersection(sg.Point(0,0).buffer(sensor_max_range))
+        return SF_sensing_bounding_triangle.intersection(sg.Point(0,0).buffer(self.max_range))

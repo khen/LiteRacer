@@ -13,12 +13,6 @@ class Vehicle():
     control_loop_counter = 0
     """Number of conrol loops invoked by Vehicles thus far."""
 
-    VF_sensor_origin = None
-    """Position of sensor frame relative to vehicle frame (located in rear-center)."""
-
-    VF_shape = None
-    """Shape of vehicle (static to avoid recalculation)."""
-
     def __init__(self, simulation, vehicle_config, initial_state=None):
         """Initiate a new Vehicle in the given Simulation according to given configuration."""
 
@@ -33,29 +27,30 @@ class Vehicle():
 
         # add controller
         self.controller = vehicle_config.controllerClass(vehicle_config)
+        self.steering_angle_range = vehicle_config.steering_angle_range
 
         # create vehicle shape
-        if Vehicle.VF_shape is None:
-            Vehicle.width = vehicle_config.width
-            Vehicle.length = vehicle_config.length
-            Vehicle.VF_shape = Vehicle._calc_VF_vehicle_shape()
+        self.width = vehicle_config.width
+        self.length = vehicle_config.length
+        self.VF_shape = self.__calc_VF_vehicle_shape()
             
         # set sensor frame of reference
-        if Vehicle.VF_sensor_origin is None:
-            Vehicle.sensor_origin_offset_x = vehicle_config.sensor_origin_offset_x
-            Vehicle.sensor_origin_offset_y = vehicle_config.sensor_origin_offset_y
-            Vehicle.VF_sensor_origin = sg.Point([Vehicle.sensor_origin_offset_x,Vehicle.sensor_origin_offset_y])
+        self._sensor_origin_offset_x = vehicle_config.sensor_origin_offset_x
+        self._sensor_origin_offset_y = vehicle_config.sensor_origin_offset_y
+        self._VF_sensor_origin = sg.Point([self._sensor_origin_offset_x, self._sensor_origin_offset_y])
 
-        Vehicle.run_timeout = vehicle_config.run_timeout
-        Vehicle.control_duration = vehicle_config.control_duration
-        Vehicle.delta_t = vehicle_config.delta_t
-
-    def get_state(self):
+        self._run_timeout = vehicle_config.run_timeout
+        self._control_duration = vehicle_config.control_duration
+        self._delta_t = vehicle_config.delta_t
+    
+    @property
+    def state(self):
         """Get vehicle state."""
 
         return self._state
 
-    def set_state(self, new_state):
+    @state.setter
+    def state(self, new_state):
         """Set vehicle state and invoke listeners."""
 
         if self._state != new_state:
@@ -81,7 +76,7 @@ class Vehicle():
         """Run vehicle for a given amout of control loops."""
 
         if number_of_control_steps is None or number_of_control_steps == inf:
-            number_of_control_steps = Vehicle.run_timeout
+            number_of_control_steps = self._run_timeout
 
         states = []
         observations = []
@@ -91,7 +86,7 @@ class Vehicle():
             # print("running control...")
 
             # get current state
-            state = self.get_state()
+            state = self.state
             states.append(state)
 
             # get observation
@@ -105,11 +100,11 @@ class Vehicle():
             # print(str(i)+": v="+str(action[0])+", steering_rate="+str(action[1]))
 
             # perform action (as long as safety is maintained)
-            status = self.execute_control_action(action, Vehicle.control_duration)[0]
+            status = self.execute_control_action(action, self._control_duration)[0]
             if status == VehicleStatus.FINISH or status == VehicleStatus.UNSAFE:
                 break
 
-        state = self.get_state()
+        state = self.state
         states.append(state)
         
         Vehicle.control_loop_counter = Vehicle.control_loop_counter + i
@@ -120,31 +115,31 @@ class Vehicle():
         """Execute a control action [v, steering rate] for "duration" seconds (in discrete "delta_t" increments), as long as safety status is maintained."""
 
         time_left = duration
-        while time_left > Vehicle.delta_t:
+        while time_left > self._delta_t:
             if self.status != VehicleStatus.SAFE: # verify status before each increment
                 return self.status, duration-time_left
-            self._execute_control_action_increment(action, Vehicle.delta_t)
-            time_left = time_left-Vehicle.delta_t
+            self.__execute_control_action_increment(action, self._delta_t)
+            time_left = time_left-self._delta_t
         if time_left > 0:
-            self._execute_control_action_increment(action, time_left)
+            self.__execute_control_action_increment(action, time_left)
             time_left = 0
 
         return self.status, duration-time_left # verify status before at the last increment
 
 
-    def _execute_control_action_increment(self, action, delta_t):
+    def __execute_control_action_increment(self, action, delta_t):
         """Update vehicle state according to a discretized bicycle model."""
 
         v          = action[0]
         d_steering = action[1] # steering rate
         
         steering = self._state[3] + delta_t*d_steering
-        if steering > self.controller.steering_angle_range[1]:
-            steering = self.controller.steering_angle_range[1]
-        elif steering < self.controller.steering_angle_range[0]:
-            steering = self.controller.steering_angle_range[0]
+        if steering > self.steering_angle_range[1]:
+            steering = self.steering_angle_range[1]
+        elif steering < self.steering_angle_range[0]:
+            steering = self.steering_angle_range[0]
         
-        d_theta = v*tan(steering)/Vehicle.length
+        d_theta = v*tan(steering)/self.length
         theta = (self._state[2] + delta_t*d_theta) % (2*pi)
 
         d_y = v*sin(theta)
@@ -153,25 +148,25 @@ class Vehicle():
         d_x = v*cos(theta)
         x = self._state[0]+delta_t*d_x
 
-        self.set_state([x, y, theta, steering])
+        self.state = [x, y, theta, steering]
         
-    @staticmethod
-    def VF_to_SF(VF_shape):
+
+    def VF_to_SF(self, VF_shape):
         """Transform a shape from vehicle frame to sensor frame."""
 
-        return affinity.translate(VF_shape, -Vehicle.sensor_origin_offset_x, -Vehicle.sensor_origin_offset_y)
+        return affinity.translate(VF_shape, -self._sensor_origin_offset_x, -self._sensor_origin_offset_y)
 
-    @staticmethod
-    def SF_to_VF(SF_shape):
+
+    def SF_to_VF(self, SF_shape):
         """Transform a shape from sensor frame to vehicle frame."""
         
-        return affinity.translate(SF_shape, Vehicle.sensor_origin_offset_x, Vehicle.sensor_origin_offset_y)
+        return affinity.translate(SF_shape, self._sensor_origin_offset_x, self._sensor_origin_offset_y)
 
-    @staticmethod
-    def _calc_VF_vehicle_shape():
+
+    def __calc_VF_vehicle_shape(self):
         """Return vehicle shape in vehicle frame based on its dimensions.
         
         Vehicle frame origin is located in the center of the rear bumper line.
         """
 
-        return sg.Polygon([(0,-Vehicle.width/2),(0,Vehicle.width/2),(Vehicle.length,Vehicle.width/2),(Vehicle.length,-Vehicle.width/2)])
+        return sg.Polygon([(0,-self.width/2),(0,self.width/2),(self.length,self.width/2),(self.length,-self.width/2)])

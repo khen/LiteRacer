@@ -15,11 +15,10 @@ class Controller():
         """Initialize controller as specified in the configuration."""
         
         self.observation_image_size = vehicle_config.observation_image_size
-        self.steering_angle_range = vehicle_config.steering_angle_range
         
         # initialize controller if not in controller training mode
         if Controller._controllerModel is None:
-            self._load_controller_model(vehicle_config)
+            self._load_controller_model(vehicle_config.controller_model_path, vehicle_config.controller_model_type)
 
     def get_control_action(self, observation_image, steering):
         """Return a control action (speed, steering speed) given a sensor observation and steering value."""
@@ -33,7 +32,7 @@ class Controller():
         """Mitigate sensor output and control model input formats.
            Arrange raw observation and steering value in input format expected by the NN controller model."""
 
-        observation_array = self._compress_sensor_image_to_array(observation_image)
+        observation_array = self.__compress_sensor_image_to_array(observation_image)
         # number of channels
         observation_array_augmented = np.expand_dims(observation_array, axis=0)
         steering_array = np.array([steering], dtype=np.float32)
@@ -44,7 +43,7 @@ class Controller():
 
         return {'scan': observation_array_augmented, 'steering': steering_array}
 
-    def _compress_sensor_image_to_array(self, observation_image):
+    def __compress_sensor_image_to_array(self, observation_image):
         """Downsample observation image and save in array."""
 
         observation_image = ImageOps.grayscale(observation_image)
@@ -52,21 +51,21 @@ class Controller():
         observation_array = np.asarray(observation_image)
         return observation_array
 
-    def _load_controller_model(self, vehicle_config):
+    def _load_controller_model(self, model_path, model_type):
         """Set NN controller model as specified in the configuration."""
 
         try:
             # load stable_baslines model according to it type (training algorithm)
             import stable_baselines3 
-            model_type = getattr(stable_baselines3, vehicle_config.controller_model_type)
+            model_type = getattr(stable_baselines3, model_type)
             load_func = getattr(model_type, 'load')
             import os 
-            if os.path.isabs(vehicle_config.controller_model_path) == True:
+            if os.path.isabs(model_path) == True:
                 # given an absolute path to controller model
-                Controller._controllerModel = load_func(vehicle_config.controller_model_path)
+                Controller._controllerModel = load_func(model_path)
             else:
                 # given relative path, calc in relation to package location
                 parent_dir_of_current_file = "\\".join(os.path.realpath(__file__).split("\\")[0:-2])
-                Controller._controllerModel = load_func(parent_dir_of_current_file+"\\"+vehicle_config.controller_model_path)
+                Controller._controllerModel = load_func(parent_dir_of_current_file+"\\"+model_path)
         except Exception as e:
             raise Warning('Unable to load vehicle controller model.')

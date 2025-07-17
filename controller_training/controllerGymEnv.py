@@ -94,7 +94,7 @@ class ControllerGymEnv(gym.Env):
 
     def _get_current_observation_for_controller(self):
         # get steering from state
-        steering = self.simulation.vehicle.get_state()[3]
+        steering = self.simulation.vehicle.state[3]
         # get a sensor image
         if self.simulation.vehicle.status == VehicleStatus.SAFE:
             observation_image = self.simulation.vehicle.sensor.get_observation_image()

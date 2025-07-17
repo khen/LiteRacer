@@ -189,7 +189,7 @@ class ControllableSimulation(Simulation): #TODO: move interface to separate clas
         # distance from this simulation to other simulation
         sum1 = 0
         for i in range(N):
-            p_self = self._get_random_obstructed_point()
+            p_self = self.__get_random_obstructed_point()
             
             dist_p_to_simulation_obstacles = [max([0,dist(obs[0:2],p_self)-obs[2]]) for obs in other_simulation.obstacles_in_WF]
             sum1 =  sum1 + min(dist_p_to_simulation_obstacles)
@@ -198,7 +198,7 @@ class ControllableSimulation(Simulation): #TODO: move interface to separate clas
         # distance from other simulation to this simulation
         sum2 = 0
         for i in range(N):
-            p_simulation = other_simulation._get_random_obstructed_point()
+            p_simulation = other_simulation.__get_random_obstructed_point()
             
             dist_p_to_self_obstacles = [max([0,dist(obs[0:2],p_simulation)-obs[2]]) for obs in self.obstacles_in_WF]
             sum2 =  sum2 + min(dist_p_to_self_obstacles)
@@ -209,7 +209,7 @@ class ControllableSimulation(Simulation): #TODO: move interface to separate clas
         return (avg1+avg2)/2          *3 # number of obstacles   ###
     
 
-    def _get_random_obstructed_point(self):
+    def __get_random_obstructed_point(self):
         """Return a random point from within one of the obstacles."""
 
         random_obs = self.obstacles_in_WF[random.randint(0,len(self.obstacles_in_WF)-1)]
