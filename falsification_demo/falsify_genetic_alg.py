@@ -7,7 +7,7 @@ sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 import random
 import simulation_config
 from meta_planning.controllableSimulation import ControllableSimulation
-from LiteRacer.components.vehicle import Vehicle
+from literacer.components.vehicle import Vehicle
 
 
 NUMBER_OF_OBS = 3

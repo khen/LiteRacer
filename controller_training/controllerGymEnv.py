@@ -7,8 +7,8 @@ from PIL import Image
 import training_config
 from training_util_funcs import collision_distance_score, goal_distance_score, calc_reward
 from simulation_config import vehicle_config
-from LiteRacer.utils.enums import VehicleStatus
-from LiteRacer.components.simulation import Simulation
+from literacer.utils.enums import VehicleStatus
+from literacer.components.simulation import Simulation
 
 class ControllerGymEnv(gym.Env):
 

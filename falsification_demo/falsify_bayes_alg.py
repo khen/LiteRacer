@@ -7,7 +7,7 @@ sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 from bayes_opt import BayesianOptimization, acquisition
 import simulation_config
 from meta_planning.controllableSimulation import ControllableSimulation
-from LiteRacer.components.vehicle import Vehicle
+from literacer.components.vehicle import Vehicle
 
 
 def simulation_function_wrapper(obs1_x, obs1_y, obs2_x, obs2_y, obs3_x, obs3_y):

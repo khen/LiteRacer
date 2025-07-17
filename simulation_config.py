@@ -3,9 +3,9 @@
 from types import SimpleNamespace
 from math import sin, cos, atan2, pi
 from scipy.special import ellipeinc
-from LiteRacer.components.controller import Controller
-from LiteRacer.components.sensor import Sensor
-from LiteRacer.utils.enums import SensingFreq, DrawObservationInVisualizer
+from literacer.components.controller import Controller
+from literacer.components.sensor import Sensor
+from literacer.utils.enums import SensingFreq, DrawObservationInVisualizer
 
 
 """Environment parameters."""
